@@ -31,10 +31,12 @@ bloquear antes de descargar, dormir pestañas, arrancar rápido y no cargar lo q
 
 ### No-objetivos (v1)
 - Sincronización entre dispositivos.
-- Extensiones de terceros.
+- Extensiones de Chrome. Qt 6.10+ permite cargar extensiones Manifest V3 de forma
+  experimental (`QWebEngineExtensionManager`); se explorará después de v1.
 - Gestor de contraseñas propio (se puede añadir más adelante).
-- Versión móvil y macOS.
-- Instalador con autoactualización (v1 se distribuye como carpeta portable/zip).
+- Versión Android: deseada a futuro, no prioritaria. Qt WebEngine no existe en Android,
+  así que será una app aparte que solo comparta parte del código. macOS no está previsto.
+- Instalador: pendiente de decisión del usuario (ver §10).
 
 ### Anti-objetivos (fracaso aunque "funcione")
 - Que Sora arranque o abra pestañas más lento que Chrome en el mismo equipo.
@@ -45,14 +47,23 @@ bloquear antes de descargar, dormir pestañas, arrancar rápido y no cargar lo q
 
 ## 3. Restricciones
 - Desarrollo en un contenedor Linux en la nube; la versión de Windows se compila y
-  empaqueta en GitHub Actions. Las pruebas finales en Windows las hace el usuario.
+  empaqueta en GitHub Actions. Las pruebas automáticas corren en máquinas Windows de
+  GitHub; las pruebas finales y mediciones en el PC del usuario las hace Claude
+  conectándose a ese PC (Remote Control), con permiso del usuario en cada conexión.
 - Licencia de Qt: LGPLv3, enlazado dinámico. Suficiente para uso personal.
-- Qt WebEngine precompilado **no incluye códecs propietarios** (H.264/AAC) ni DRM
-  Widevine garantizado: la mayoría de YouTube funciona (VP9/AV1), pero servicios como
-  Netflix o Disney+ probablemente no. Compilar Qt WebEngine con códecs propios es posible
-  pero cuesta horas de compilación por versión; queda fuera de v1.
-- Qt WebEngine no ofrece Google Safe Browsing. La protección contra webs maliciosas
-  vendrá de las listas de bloqueo (p. ej. listas de malware de uBlock).
+- Qt WebEngine precompilado **no incluye códecs propietarios** (H.264/AAC). El usuario
+  quiere **Netflix y Crunchyroll**, que además exigen DRM Widevine. Requiere: compilar
+  Qt WebEngine con `-webengine-proprietary-codecs` (horas por versión, posiblemente
+  demasiado para las máquinas gratuitas de GitHub) y cargar el módulo Widevine de una
+  instalación de Chrome. Aun así Netflix exige que el navegador esté firmado por Google
+  (VMP), algo que un proyecto personal no puede obtener, y en foros de Qt se reportan
+  fallos de reproducción. **Plan:** un experimento temprano y acotado en el PC del usuario
+  para ver qué funciona; y, pase lo que pase, un botón "Abrir en Edge" que aparece
+  automáticamente cuando una web falla por DRM.
+- Qt WebEngine no incluye Google Safe Browsing. Se implementa con la **Safe Browsing
+  Update API v4** de Google (gratuita para uso no comercial, requiere clave de API del
+  usuario): las listas se descargan y se comprueban en local; a Google solo llega un
+  prefijo de hash cuando hay coincidencia, nunca la URL. Además, listas de malware de uBlock.
 
 ## 4. Enfoques considerados
 
@@ -139,8 +150,10 @@ deserializa desde caché en disco al arrancar, en segundo plano, sin bloquear la
 - WebRTC limitado a interfaces públicas (no filtra la IP local).
 - Modo privado: perfil "off-the-record"; nada se escribe en disco; ventana con color distintivo.
 - Sandbox de Chromium siempre activado.
-- Sin telemetría. Única conexión de fondo propia: actualización de listas de bloqueo
-  (por defecto cada 24 h: EasyList, EasyPrivacy, uBlock filters, uBlock badware).
+- Sin telemetría. Conexiones de fondo propias, todas documentadas y desactivables:
+  listas de bloqueo (cada 24 h: EasyList, EasyPrivacy, uBlock filters, uBlock badware),
+  listas de Safe Browsing (según indique Google) y comprobación de nueva versión de Sora
+  en GitHub Releases (una vez al día; decisión del usuario).
 - Política de actualización *(decisión del constructor)*: con Qt de código abierto, los
   parches de una versión LTS pasan a ser solo comerciales con el tiempo, así que se sigue
   **la última versión menor estable de Qt 6.x**, no 6.8 LTS. Cada versión de Qt con
@@ -183,3 +196,6 @@ El arranque en frío se mide sin restaurar sesión.
 - Paleta exacta de Niebla en claro y oscuro, partiendo del boceto.
 - Orden de implementación, siempre que el navegador sea usable lo antes posible
   (ventana + pestañas + dirección primero).
+
+## 10. Pendiente del usuario
+- Instalador: zip portable, instalador clásico, o instalador con autoactualización.
