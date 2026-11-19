@@ -1,6 +1,6 @@
 # Sora — Diseño de la versión 1
 
-Fecha: 2026-11-18 · Estado: borrador para aprobación
+Fecha: 2026-11-18 · Estado: **aprobado** por el usuario (2026-11-19)
 
 ## 1. Qué es y por qué
 
@@ -28,6 +28,7 @@ bloquear antes de descargar, dormir pestañas, arrancar rápido y no cargar lo q
   todas las funciones habituales y el diseño de pestañas dormidas ya las supone.)*
 - Tema claro y oscuro que sigue al sistema.
 - Windows 10/11 x64 como plataforma principal; Linux x64 compilable y funcional.
+- **Instalador con autoactualización** en Windows (decisión del usuario), ver §6.
 
 ### No-objetivos (v1)
 - Sincronización entre dispositivos.
@@ -36,7 +37,6 @@ bloquear antes de descargar, dormir pestañas, arrancar rápido y no cargar lo q
 - Gestor de contraseñas propio (se puede añadir más adelante).
 - Versión Android: deseada a futuro, no prioritaria. Qt WebEngine no existe en Android,
   así que será una app aparte que solo comparta parte del código. macOS no está previsto.
-- Instalador: pendiente de decisión del usuario (ver §10).
 
 ### Anti-objetivos (fracaso aunque "funcione")
 - Que Sora arranque o abra pestañas más lento que Chrome en el mismo equipo.
@@ -162,6 +162,18 @@ deserializa desde caché en disco al arrancar, en segundo plano, sin bloquear la
   dos interruptores por sitio: bloqueador y bloqueo de cookies de terceros. Las excepciones
   se guardan en SQLite y se consultan en memoria (no en disco) en cada petición.
 
+### Instalación y actualización (Windows)
+- Instalador por usuario (sin permisos de administrador) en `%LOCALAPPDATA%\Sora`, con
+  acceso en el menú Inicio, registro como navegador disponible para "navegador
+  predeterminado" y desinstalación desde Ajustes. Herramienta: Inno Setup *(decisión del
+  constructor)*.
+- Comprobación diaria de GitHub Releases. Si hay versión nueva: se descarga en segundo
+  plano, se verifica (SHA-256 + firma Ed25519 con clave pública embebida en Sora) y se
+  instala en silencio al cerrar o reiniciar Sora. Aviso discreto "Reinicia para actualizar".
+- Sin firma de código de Windows (certificado de pago): SmartScreen avisará en la primera
+  instalación. Aceptable para uso personal.
+- Linux: de momento archivo comprimido (AppImage o tar), sin autoactualización.
+
 ## 7. Rendimiento: cómo lo medimos
 
 Objetivos medidos en el mismo equipo contra Chrome estable, con perfil limpio:
@@ -196,6 +208,3 @@ El arranque en frío se mide sin restaurar sesión.
 - Paleta exacta de Niebla en claro y oscuro, partiendo del boceto.
 - Orden de implementación, siempre que el navegador sea usable lo antes posible
   (ventana + pestañas + dirección primero).
-
-## 10. Pendiente del usuario
-- Instalador: zip portable, instalador clásico, o instalador con autoactualización.
