@@ -198,8 +198,8 @@ El arranque en frío se mide sin restaurar sesión.
 ## 8. Calidad y entrega
 - Pruebas unitarias con Qt Test para: almacenes de datos, análisis de la barra de
   direcciones (URL vs búsqueda), puente con adblock-rust, HTTPS upgrader, reglas de TabSleeper.
-- GitHub Actions: compilación y pruebas en Linux y Windows; artefacto zip portable para
-  Windows generado con `windeployqt`.
+- GitHub Actions: compilación y pruebas en Linux y Windows; instalador de Windows (Inno Setup) y
+  firmado, con los archivos de Qt reunidos por `windeployqt`.
 
 ## 9. Lo que queda a criterio del constructor
 - Estructura interna de clases, señales y nombres más allá de los módulos de §6.
