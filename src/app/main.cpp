@@ -34,6 +34,7 @@ int main(int argc, char* argv[])
     auto* profile = new QWebEngineProfile(QStringLiteral("default"), &app);
 
     auto* adblock = new sora::AdblockService(&app);
+    adblock->attach(profile);
 
     sora::MainWindow window(profile, adblock);
     window.show();

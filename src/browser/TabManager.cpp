@@ -3,6 +3,7 @@
 #include <QStackedWidget>
 
 #include "browser/Tab.h"
+#include "privacy/AdblockService.h"
 
 namespace sora {
 
@@ -13,6 +14,9 @@ TabManager::TabManager(QWebEngineProfile* profile, const AdblockService* adblock
     , m_adblock(adblock)
     , m_stack(stack)
 {
+    if (m_adblock)
+        connect(m_adblock, &AdblockService::blocked, this,
+                [this](const QUrl&, const QUrl& firstParty) { countBlocked(firstParty); });
     connect(m_stack, &QStackedWidget::currentChanged, this, [this](int index) {
         if (!m_quiet)
             emit currentChanged(index);
@@ -21,12 +25,13 @@ TabManager::TabManager(QWebEngineProfile* profile, const AdblockService* adblock
 
 Tab* TabManager::newTab(const QUrl& url, int index, bool activate)
 {
-    auto* tab = new Tab(m_profile, m_adblock);
+    auto* tab = new Tab(m_profile);
     tab->onCreateWindow = [this, tab](QWebEnginePage::WebWindowType type) {
         return newTab({}, indexOf(tab) + 1, type != QWebEnginePage::WebBrowserBackgroundTab);
     };
     connect(tab, &QWebEngineView::titleChanged, this,
             [this, tab](const QString& title) { emit tabTitleChanged(indexOf(tab), title); });
+    connect(tab->page(), &QWebEnginePage::windowCloseRequested, this, [this, tab] { closeTab(indexOf(tab)); });
     connect(tab, &QWebEngineView::iconChanged, this,
             [this, tab](const QIcon& icon) { emit tabIconChanged(indexOf(tab), icon); });
 
@@ -96,6 +101,25 @@ int TabManager::currentIndex() const { return m_stack->currentIndex(); }
 int TabManager::count() const { return m_stack->count(); }
 Tab* TabManager::tab(int index) const { return qobject_cast<Tab*>(m_stack->widget(index)); }
 Tab* TabManager::currentTab() const { return tab(currentIndex()); }
+void TabManager::countBlocked(const QUrl& firstParty)
+{
+    // shortcut: se reparte por sitio (desde el perfil no se sabe la página); con el mismo sitio
+    // en varias pestañas de fondo se lo lleva la primera.
+    Tab* target = nullptr;
+    for (int i = 0; i < count(); ++i) {
+        if (tab(i)->url().host() != firstParty.host())
+            continue;
+        if (i == currentIndex()) {
+            target = tab(i);
+            break;
+        }
+        if (!target)
+            target = tab(i);
+    }
+    if (target)
+        target->countBlocked();
+}
+
 int TabManager::indexOf(const Tab* tab) const { return m_stack->indexOf(const_cast<Tab*>(tab)); }
 
 } // namespace sora

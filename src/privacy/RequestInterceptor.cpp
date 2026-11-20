@@ -54,7 +54,7 @@ void RequestInterceptor::interceptRequest(QWebEngineUrlRequestInfo& info)
 {
     if (m_service->decide(info.requestUrl(), info.firstPartyUrl(), info.resourceType())) {
         info.block(true);
-        emit blocked(info.requestUrl()); // las conexiones con la interfaz son en cola (otro hilo)
+        emit blocked(info.requestUrl(), info.firstPartyUrl());
     }
 }
 

@@ -4,6 +4,8 @@
 
 #include "browser/Tab.h"
 #include "browser/TabManager.h"
+#include <QFile>
+#include "privacy/AdblockEngine.h"
 #include "privacy/AdblockService.h"
 
 using sora::Tab;
@@ -98,6 +100,33 @@ private slots:
         QTRY_COMPARE(loaded.count(), 1);
         QVERIFY(loadingWhenStarted);
         QVERIFY(!tab->isLoading());
+    }
+
+    void pageCanCloseItsTab()
+    {
+        // Las ventanas de inicio de sesión (Google, GitHub) se cierran con window.close().
+        QStackedWidget stack;
+        TabManager tabs(m_profile, &m_adblock, &stack);
+        tabs.newTab();
+        tabs.newTab();
+        emit tabs.tab(1)->page()->windowCloseRequested();
+        QCOMPARE(tabs.count(), 1);
+    }
+
+    void blockedRequestsAreCountedWithProfileInterceptor()
+    {
+        // El perfil bloquea todo (también service workers); cada pestaña sigue contando lo suyo.
+        QFile f(qEnvironmentVariable("SORA_TEST_DATA") + "/rules-small.txt");
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        sora::AdblockService adblock;
+        adblock.setEngine(std::make_shared<const sora::AdblockEngine>(sora::AdblockEngine::fromRules(f.readAll())));
+        auto* profile = new QWebEngineProfile(this);
+        adblock.attach(profile);
+        QStackedWidget stack;
+        TabManager tabs(profile, &adblock, &stack);
+        tabs.newTab();
+        tabs.tab(0)->setHtml("<img src='https://ads.example/x.js'>", QUrl("https://site.test/"));
+        QTRY_COMPARE(tabs.tab(0)->blockedCount(), 1);
     }
 
     void popupOpensNextToCurrent()

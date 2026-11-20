@@ -7,14 +7,12 @@ class QWebEngineProfile;
 
 namespace sora {
 
-class AdblockService;
-
-// Una pestaña: la vista web con su propia página e interceptor, y el contador de bloqueos de la
-// página actual (vuelve a 0 al empezar a cargar otra).
+// Una pestaña: la vista web con su propia página y el contador de bloqueos de la página actual
+// (vuelve a 0 al empezar a cargar otra).
 class Tab : public QWebEngineView {
     Q_OBJECT
 public:
-    Tab(QWebEngineProfile* profile, const AdblockService* adblock, QWidget* parent = nullptr);
+    explicit Tab(QWebEngineProfile* profile, QWidget* parent = nullptr);
 
     int blockedCount() const { return m_blocked; }
     bool isLoading() const { return m_loading; }

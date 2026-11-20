@@ -30,6 +30,9 @@ public:
     Tab* currentTab() const;
     int indexOf(const Tab* tab) const;
 
+    // Suma un bloqueo a la pestaña de ese sitio (la actual si coincide; si no, la primera).
+    void countBlocked(const QUrl& firstParty);
+
 signals:
     void tabInserted(int index);
     void tabRemoved(int index);

@@ -5,12 +5,15 @@
 #include <atomic>
 #include <memory>
 
+class QWebEngineProfile;
+
 namespace sora {
 
 class AdblockEngine;
 
-// Motor de bloqueo compartido por todas las pestañas. Seguro entre hilos: los interceptores lo
-// consultan desde el hilo de Chromium mientras la interfaz cambia el motor.
+
+// Motor de bloqueo compartido por todas las pestañas. El motor se cambia de forma atómica, así que
+// es seguro aunque se consulte desde otro hilo.
 class AdblockService : public QObject {
     Q_OBJECT
 public:
@@ -19,6 +22,12 @@ public:
     // Sustituye el motor de forma atómica; nullptr = no bloquear nada.
     void setEngine(std::shared_ptr<const AdblockEngine> engine);
     bool decide(const QUrl& url, const QUrl& firstParty, QWebEngineUrlRequestInfo::ResourceType type) const;
+    // Pone el interceptor en el perfil: así se bloquea también lo que no sale de una página
+    // (service workers). Cada bloqueo se avisa con blocked().
+    void attach(QWebEngineProfile* profile);
+
+signals:
+    void blocked(QUrl url, QUrl firstParty);
 
 private:
     std::atomic<std::shared_ptr<const AdblockEngine>> m_engine;

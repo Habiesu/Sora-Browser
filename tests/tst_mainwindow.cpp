@@ -45,6 +45,21 @@ private slots:
         QVERIFY(!w->centralWidget()->testAttribute(Qt::WA_ContentsMarginsRespectsSafeArea));
         QCOMPARE(w->findChild<sora::TitleBar*>()->mapTo(w.get(), QPoint(0, 0)).y(), 0);
     }
+    void switchingTabsShowsThatTabsUrl()
+    {
+        // Escribir en A y pasar a B (la tira no quita el foco): la dirección debe ser la de B.
+        auto w = openWindow();
+        sora::Tab* b = w->tabs()->newTab({}, -1, false);
+        QSignalSpy loaded(b, &sora::Tab::loadFinished);
+        b->setHtml("<p>b</p>", QUrl("https://b.test/"));
+        QTRY_COMPARE(loaded.count(), 1);
+        auto* box = w->findChild<sora::Omnibox*>();
+        box->setFocus();
+        QTRY_VERIFY(box->hasFocus());
+        QTest::keyClicks(box, "hola");
+        w->tabs()->setCurrentIndex(1);
+        QCOMPARE(box->text(), QString("b.test"));
+    }
     void ctrlTOpensTab()
     {
         auto w = openWindow();

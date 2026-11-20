@@ -9,8 +9,8 @@ class AdblockService;
 // Traduce el tipo de recurso de Qt WebEngine al nombre que entiende adblock-rust.
 const char* adblockRequestType(QWebEngineUrlRequestInfo::ResourceType type);
 
-// Interceptor de una página: pregunta al servicio compartido y avisa de cada bloqueo para que la
-// pestaña lleve su propio contador.
+// Interceptor del perfil: pregunta al servicio y avisa de cada bloqueo con la web de primer nivel,
+// para que se cuente en la pestaña de ese sitio.
 class RequestInterceptor : public QWebEngineUrlRequestInterceptor {
     Q_OBJECT
 public:
@@ -20,7 +20,7 @@ public:
     void interceptRequest(QWebEngineUrlRequestInfo& info) override;
 
 signals:
-    void blocked(QUrl url);
+    void blocked(QUrl url, QUrl firstParty);
 
 private:
     const AdblockService* m_service;

@@ -1,17 +1,11 @@
 #include "browser/Tab.h"
 
-#include "privacy/RequestInterceptor.h"
-
 namespace sora {
 
-Tab::Tab(QWebEngineProfile* profile, const AdblockService* adblock, QWidget* parent)
+Tab::Tab(QWebEngineProfile* profile, QWidget* parent)
     : QWebEngineView(parent)
 {
-    auto* page = new QWebEnginePage(profile, this);
-    auto* interceptor = new RequestInterceptor(adblock, page);
-    page->setUrlRequestInterceptor(interceptor);
-    setPage(page);
-    connect(interceptor, &RequestInterceptor::blocked, this, [this] { countBlocked(); }, Qt::QueuedConnection);
+    setPage(new QWebEnginePage(profile, this));
     connect(this, &QWebEngineView::loadFinished, this, [this] { m_loading = false; });
     connect(this, &QWebEngineView::loadStarted, this, [this] {
         m_loading = true;

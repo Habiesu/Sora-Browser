@@ -3,6 +3,8 @@
 #include "privacy/AdblockEngine.h"
 #include "privacy/RequestInterceptor.h"
 
+#include <QWebEngineProfile>
+
 namespace sora {
 
 AdblockService::AdblockService(QObject* parent)
@@ -13,6 +15,13 @@ AdblockService::AdblockService(QObject* parent)
 void AdblockService::setEngine(std::shared_ptr<const AdblockEngine> engine)
 {
     m_engine.store(std::move(engine));
+}
+
+void AdblockService::attach(QWebEngineProfile* profile)
+{
+    auto* interceptor = new RequestInterceptor(this, this);
+    connect(interceptor, &RequestInterceptor::blocked, this, &AdblockService::blocked);
+    profile->setUrlRequestInterceptor(interceptor);
 }
 
 bool AdblockService::decide(const QUrl& url, const QUrl& firstParty,

@@ -162,10 +162,11 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
 MainWindow::~MainWindow()
 {
     // Las pestañas se destruyen después que los miembros de la ventana: que no avisen a nadie.
+    // También las cerradas que esperan su deleteLater: siguen siendo hijas del stack.
     m_tabs->disconnect(this);
-    for (int i = 0; i < m_tabs->count(); ++i) {
-        m_tabs->tab(i)->disconnect(this);
-        m_tabs->tab(i)->page()->disconnect(this);
+    for (Tab* tab : m_stack->findChildren<Tab*>(Qt::FindDirectChildrenOnly)) {
+        tab->disconnect(this);
+        tab->page()->disconnect(this);
     }
 }
 
@@ -238,6 +239,7 @@ void MainWindow::showCurrentTab()
     Tab* tab = currentTab();
     if (!tab)
         return;
+    m_toolbar->omnibox()->setModified(false); // lo escrito era para la pestaña anterior
     m_toolbar->omnibox()->setUrl(tab->url());
     m_toolbar->setBlockedCount(tab->blockedCount());
     m_linkPreview->hide();
