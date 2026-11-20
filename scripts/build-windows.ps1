@@ -26,6 +26,8 @@ $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.e
 if (-not (Test-Path $vswhere)) { throw "Falta Visual Studio 2022 Build Tools con C++." }
 $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
 if (-not $vs) { throw "Visual Studio no tiene las herramientas de C++ (VC.Tools.x86.x64)." }
+# vcvars64.bat llama a vswhere.exe sin ruta; sin esto avisa de que no lo encuentra
+$env:PATH = "$(Split-Path $vswhere);$env:PATH"
 $vars = cmd /c "`"$vs\VC\Auxiliary\Build\vcvars64.bat`" >nul && set"
 foreach ($line in $vars) { if ($line -match '^([^=]+)=(.*)$') { Set-Item -Path "env:$($matches[1])" -Value $matches[2] } }
 

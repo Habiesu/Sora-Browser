@@ -6,7 +6,7 @@ Sustituye a aqtinstall, que (3.3.0) no entiende la estructura del repositorio de
 Uso: python fetch-qt.py 6.12.0 <carpeta destino, p. ej. .qt\\6.12.0\\msvc2022_64>
 Requiere py7zr (pip install py7zr).
 """
-import hashlib, io, os, re, sys, urllib.request, xml.etree.ElementTree as ET
+import hashlib, os, re, sys, tempfile, urllib.request, xml.etree.ElementTree as ET
 
 import py7zr
 
@@ -18,6 +18,16 @@ SKIP = ("qtdoc-",)
 def get(url):
     with urllib.request.urlopen(url) as r:
         return r.read()
+
+
+def download(url, path):
+    """Guarda url en path por trozos (WebEngine pesa cientos de MB) y devuelve su SHA-1."""
+    h = hashlib.sha1()
+    with urllib.request.urlopen(url) as r, open(path, "wb") as f:
+        while chunk := r.read(1 << 20):
+            h.update(chunk)
+            f.write(chunk)
+    return h.hexdigest()
 
 
 def updates(repo):
@@ -57,12 +67,15 @@ def install(repo, name, pkgs, out):
             continue
         url = f"{repo}{name}/{ver}{arc}"
         print("Descargando", url, flush=True)
-        data = get(url)
-        sha1 = get(url + ".sha1").decode().split()[0]
-        if hashlib.sha1(data).hexdigest() != sha1:
-            raise SystemExit(f"SHA-1 incorrecto: {url}")
-        with py7zr.SevenZipFile(io.BytesIO(data)) as z:
-            z.extractall(out)
+        fd, tmp = tempfile.mkstemp(suffix=".7z")
+        os.close(fd)
+        try:
+            if download(url, tmp) != get(url + ".sha1").decode().split()[0]:
+                raise SystemExit(f"SHA-1 incorrecto: {url}")
+            with py7zr.SevenZipFile(tmp) as z:
+                z.extractall(out)
+        finally:
+            os.remove(tmp)
 
 
 def main():
