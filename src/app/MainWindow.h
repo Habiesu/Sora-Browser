@@ -3,6 +3,7 @@
 #include <QUrl>
 
 class QLabel;
+class QShortcut;
 class QStackedWidget;
 class QWebEngineProfile;
 
@@ -47,6 +48,7 @@ private:
     QStackedWidget* m_stack;
     TabManager* m_tabs;
     QLabel* m_linkPreview;
+    QShortcut* m_stop = nullptr; // Esc: solo mientras carga la pestaña visible y el foco está en la web
     bool m_syncing = false; // cambios hechos por código en la tira: no reenviarlos
 
     void watchTab(Tab* tab);

@@ -264,6 +264,8 @@ void MainWindow::refreshNavigation()
     if (!tab)
         return;
     m_toolbar->setNavigation(tab->history()->canGoBack(), tab->history()->canGoForward(), tab->isLoading());
+    if (m_stop)
+        m_stop->setEnabled(tab->isLoading());
 }
 
 void MainWindow::selectTab(int index)
@@ -306,6 +308,13 @@ void MainWindow::addShortcuts()
         on(keys, [this] { m_toolbar->omnibox()->setFocus(Qt::ShortcutFocusReason); });
     for (auto keys : {QKeySequence(Qt::Key_F5), QKeySequence(Qt::CTRL | Qt::Key_R)})
         on(keys, [this] { if (auto* t = currentTab()) t->reload(); });
+    // Esc en la web: parar la carga. Fuera de la carga se apaga para no quitárselo a la página
+    // (cerrar sus diálogos), y en la dirección sigue restaurando la URL.
+    m_stop = new QShortcut(QKeySequence(Qt::Key_Escape), m_stack);
+    m_stop->setObjectName(QStringLiteral("StopShortcut"));
+    m_stop->setContext(Qt::WidgetWithChildrenShortcut);
+    m_stop->setEnabled(false);
+    connect(m_stop, &QShortcut::activated, this, [this] { if (auto* t = currentTab()) t->stop(); });
     on(QKeySequence(Qt::ALT | Qt::Key_Left), [this] { if (auto* t = currentTab()) t->back(); });
     on(QKeySequence(Qt::ALT | Qt::Key_Right), [this] { if (auto* t = currentTab()) t->forward(); });
 }

@@ -1,5 +1,6 @@
 #include <QtTest>
 #include <QUrlQuery>
+#include <QShortcut>
 #include <QToolButton>
 #include <QWebEngineProfile>
 #include "app/MainWindow.h"
@@ -81,6 +82,29 @@ private slots:
         QWidget* focus = QApplication::focusWidget();
         QVERIFY(focus);
         QVERIFY(focus == now || now->isAncestorOf(focus) || focus == now->focusProxy());
+    }
+    void escapeStopsLoadingOnlyWhileLoading()
+    {
+        auto w = openWindow();
+        auto* stop = w->findChild<QShortcut*>("StopShortcut");
+        QVERIFY(stop);
+        QVERIFY(!stop->isEnabled()); // sin cargar, Esc es para la web
+        QSignalSpy activated(stop, &QShortcut::activated);
+        sora::Tab* tab = w->currentTab();
+        emit tab->loadStarted();
+        QVERIFY(stop->isEnabled());
+        tab->setFocus();
+        QTRY_VERIFY(QApplication::focusWidget() && (QApplication::focusWidget() == tab || tab->isAncestorOf(QApplication::focusWidget())));
+        QTest::keyClick(QApplication::focusWidget(), Qt::Key_Escape);
+        QCOMPARE(activated.count(), 1);
+        // Con el foco en la dirección, Esc sigue siendo para la dirección.
+        auto* box = w->findChild<sora::Omnibox*>();
+        box->setFocus();
+        QTRY_VERIFY(box->hasFocus());
+        QTest::keyClick(box, Qt::Key_Escape);
+        QCOMPARE(activated.count(), 1);
+        emit tab->loadFinished(true);
+        QVERIFY(!stop->isEnabled());
     }
     void ctrlTOpensTab()
     {
