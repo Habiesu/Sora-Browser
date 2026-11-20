@@ -2,6 +2,7 @@
 #include <QFile>
 
 #include "privacy/AdblockEngine.h"
+#include "privacy/AdblockService.h"
 #include "privacy/RequestInterceptor.h"
 
 using RT = QWebEngineUrlRequestInfo::ResourceType;
@@ -29,29 +30,40 @@ private slots:
     }
     void noEngineMeansNoBlocking()
     {
-        sora::RequestInterceptor interceptor;
-        QVERIFY(!interceptor.decide(QUrl("https://ads.example/x.js"), QUrl("https://site.test"), RT::ResourceTypeScript));
+        sora::AdblockService service;
+        QVERIFY(!service.decide(QUrl("https://ads.example/x.js"), QUrl("https://site.test"), RT::ResourceTypeScript));
     }
     void blocksWithEngine()
     {
-        sora::RequestInterceptor interceptor;
-        interceptor.setEngine(smallEngine());
-        QVERIFY(interceptor.decide(QUrl("https://ads.example/x.js"), QUrl("https://site.test"), RT::ResourceTypeScript));
-        QVERIFY(!interceptor.decide(QUrl("https://ok.test/x.js"), QUrl("https://site.test"), RT::ResourceTypeScript));
+        sora::AdblockService service;
+        service.setEngine(smallEngine());
+        QVERIFY(service.decide(QUrl("https://ads.example/x.js"), QUrl("https://site.test"), RT::ResourceTypeScript));
+        QVERIFY(!service.decide(QUrl("https://ok.test/x.js"), QUrl("https://site.test"), RT::ResourceTypeScript));
     }
     void neverBlocksMainFrameNavigation()
     {
-        sora::RequestInterceptor interceptor;
-        interceptor.setEngine(smallEngine());
-        QVERIFY(!interceptor.decide(QUrl("https://ads.example/"), QUrl(), RT::ResourceTypeMainFrame));
-        QVERIFY(!interceptor.decide(QUrl("https://ads.example/"), QUrl(), RT::ResourceTypeNavigationPreloadMainFrame));
+        sora::AdblockService service;
+        service.setEngine(smallEngine());
+        QVERIFY(!service.decide(QUrl("https://ads.example/"), QUrl(), RT::ResourceTypeMainFrame));
+        QVERIFY(!service.decide(QUrl("https://ads.example/"), QUrl(), RT::ResourceTypeNavigationPreloadMainFrame));
     }
     void engineCanBeRemoved()
     {
-        sora::RequestInterceptor interceptor;
-        interceptor.setEngine(smallEngine());
-        interceptor.setEngine(nullptr);
-        QVERIFY(!interceptor.decide(QUrl("https://ads.example/x.js"), QUrl("https://site.test"), RT::ResourceTypeScript));
+        sora::AdblockService service;
+        service.setEngine(smallEngine());
+        service.setEngine(nullptr);
+        QVERIFY(!service.decide(QUrl("https://ads.example/x.js"), QUrl("https://site.test"), RT::ResourceTypeScript));
+    }
+    void interceptorsShareTheService()
+    {
+        // Un interceptor por pestaña; el motor llega una sola vez al servicio y lo ven todos.
+        sora::AdblockService service;
+        sora::RequestInterceptor first(&service);
+        sora::RequestInterceptor second(&service);
+        QCOMPARE(first.service(), &service);
+        QCOMPARE(second.service(), &service);
+        service.setEngine(smallEngine());
+        QVERIFY(first.service()->decide(QUrl("https://ads.example/x.js"), QUrl("https://site.test"), RT::ResourceTypeScript));
     }
 };
 

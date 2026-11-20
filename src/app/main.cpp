@@ -10,6 +10,7 @@
 #include <QWebEngineProfile>
 
 #include "app/MainWindow.h"
+#include "privacy/AdblockService.h"
 #include "privacy/FilterListStore.h"
 #include "privacy/RequestInterceptor.h"
 
@@ -33,10 +34,11 @@ int main(int argc, char* argv[])
 
     auto* profile = new QWebEngineProfile(QStringLiteral("default"), &app);
 
-    auto* interceptor = new sora::RequestInterceptor(&app);
-    profile->setUrlRequestInterceptor(interceptor);
+    auto* adblock = new sora::AdblockService(&app);
 
     sora::MainWindow window(profile);
+    auto* interceptor = new sora::RequestInterceptor(adblock, window.view()->page());
+    window.view()->page()->setUrlRequestInterceptor(interceptor);
     QObject::connect(interceptor, &sora::RequestInterceptor::blocked, &window,
                      [&window] { window.countBlocked(); }, Qt::QueuedConnection);
     window.show();
@@ -65,8 +67,8 @@ int main(int argc, char* argv[])
          QUrl(QStringLiteral("https://ublockorigin.github.io/uAssets/filters/filters.txt")),
          QUrl(QStringLiteral("https://ublockorigin.github.io/uAssets/filters/badware.txt"))},
         nam, &app);
-    QObject::connect(filters, &sora::FilterListStore::engineReady, interceptor,
-                     [interceptor](std::shared_ptr<const sora::AdblockEngine> engine) { interceptor->setEngine(std::move(engine)); });
+    QObject::connect(filters, &sora::FilterListStore::engineReady, adblock,
+                     [adblock](std::shared_ptr<const sora::AdblockEngine> engine) { adblock->setEngine(std::move(engine)); });
     QObject::connect(filters, &sora::FilterListStore::failed, &window,
                      [&window](const QString& reason) { window.statusBar()->showMessage(reason); });
     filters->start();

@@ -1,6 +1,7 @@
 add_library(sora_core STATIC
   app/MainWindow.h app/MainWindow.cpp
   privacy/AdblockEngine.h privacy/AdblockEngine.cpp
+  privacy/AdblockService.h privacy/AdblockService.cpp
   privacy/RequestInterceptor.h privacy/RequestInterceptor.cpp
   privacy/FilterListStore.h privacy/FilterListStore.cpp
 )
