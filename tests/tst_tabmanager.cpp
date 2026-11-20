@@ -144,6 +144,30 @@ private slots:
         QCOMPARE(tabs.currentIndex(), 1);
     }
 
+    void movingCurrentTabDoesNotHideIt()
+    {
+        // Arrastrar la pestaña visible no debe ocultarla (la web recibiría visibilitychange).
+        struct HideCounter : QObject {
+            int hides = 0;
+            bool eventFilter(QObject*, QEvent* e) override { hides += e->type() == QEvent::Hide; return false; }
+        } counter;
+        QStackedWidget stack;
+        TabManager tabs(m_profile, &m_adblock, &stack);
+        tabs.newTab(); tabs.newTab(); tabs.newTab();
+        stack.show();
+        tabs.setCurrentIndex(0);
+        Tab* first = tabs.tab(0);
+        QSignalSpy current(&tabs, &TabManager::currentChanged);
+        first->installEventFilter(&counter);
+        tabs.moveTab(0, 1);
+        tabs.moveTab(1, 2);
+        QCOMPARE(counter.hides, 0);
+        QCOMPARE(tabs.tab(2), first);
+        QCOMPARE(tabs.currentIndex(), 2);
+        QCOMPARE(tabs.currentTab(), first);
+        QCOMPARE(current.count(), 0); // sigue siendo la misma pestaña: nada que anunciar
+    }
+
     void moveKeepsStackInSync()
     {
         QStackedWidget stack;

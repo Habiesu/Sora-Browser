@@ -1,5 +1,6 @@
 #pragma once
 #include <QIcon>
+#include <QList>
 #include <QObject>
 #include <QUrl>
 
@@ -11,7 +12,8 @@ namespace sora {
 class AdblockService;
 class Tab;
 
-// Crea, cierra, mueve y selecciona pestañas. El QStackedWidget es la fuente de verdad del orden.
+// Crea, cierra, mueve y selecciona pestañas. El orden vive en m_order; el QStackedWidget solo
+// muestra la actual (reordenarlo ocultaría la pestaña visible al arrastrarla).
 class TabManager : public QObject {
     Q_OBJECT
 public:
@@ -45,6 +47,7 @@ private:
     QWebEngineProfile* m_profile;
     const AdblockService* m_adblock;
     QStackedWidget* m_stack;
+    QList<Tab*> m_order;
     bool m_quiet = false; // durante quitar/mover no se reenvían los cambios intermedios del stack
 };
 
