@@ -1,6 +1,7 @@
 #include <QtTest>
 #include <QToolButton>
 #include "ui/TabStrip.h"
+#include "ui/Theme.h"
 
 using sora::TabStrip;
 
@@ -54,6 +55,33 @@ private slots:
         for (int i = 0; i < 28; ++i)
             bar.addTab("x");
         QCOMPARE(bar.tabRect(0).width(), 60);
+    }
+    void closeButtonBlendsWithTab_data()
+    {
+        QTest::addColumn<Qt::ColorScheme>("scheme");
+        QTest::newRow("claro") << Qt::ColorScheme::Light;
+        QTest::newRow("oscuro") << Qt::ColorScheme::Dark;
+    }
+    void closeButtonBlendsWithTab()
+    {
+        // La × no debe llevar un cuadro de otro color: alrededor del aspa se ve la pestaña.
+        QFETCH(Qt::ColorScheme, scheme);
+        const sora::Palette p = sora::nieblaPalette(scheme);
+        QWidget host;
+        host.setStyleSheet(sora::nieblaStyleSheet(p));
+        TabStrip bar(&host);
+        bar.addTab("A");
+        bar.addTab("B");
+        host.resize(1200, 40);
+        bar.resize(1200, 40);
+        host.show();
+        const QImage img = bar.grab().toImage();
+        for (int i : {0, 1}) {
+            const QWidget* close = bar.tabButton(i, QTabBar::RightSide);
+            const QPoint corner = close->geometry().topLeft() + QPoint(1, 1);
+            const QColor tab = i == bar.currentIndex() ? p.surface : p.window;
+            QCOMPARE(QColor(img.pixel(corner * img.devicePixelRatio())).name(), tab.name());
+        }
     }
     void plusStaysVisible()
     {

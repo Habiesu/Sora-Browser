@@ -25,6 +25,8 @@ QTabBar::tab {
 QTabBar::tab:hover:!selected { background: @hover; }
 QTabBar::tab:selected { background: @surface; color: @text; }
 QTabBar QToolButton { background: @window; border: none; }
+#TabCloseButton { background: transparent; border: none; border-radius: 4px; }
+#TabCloseButton:hover { background: @hover; }
 #NewTabButton { background: transparent; border: none; border-radius: 6px; margin-top: 6px; }
 #NewTabButton:hover { background: @hover; }
 #WindowButton, #CloseButton { background: transparent; border: none; border-radius: 0; }
