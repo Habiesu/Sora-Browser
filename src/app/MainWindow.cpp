@@ -333,6 +333,23 @@ void MainWindow::changeEvent(QEvent* event)
     }
 }
 
+void MainWindow::showEvent(QShowEvent* event)
+{
+    QMainWindow::showEvent(event);
+#ifdef Q_OS_WIN
+    // Las banderas de Qt que darían estos estilos le hacen pintar su propia barra; sin ellos
+    // Windows ignora el doble clic en la barra, Win+flechas, minimizar desde la barra de tareas y
+    // Alt+Espacio. Se añaden a mano y la barra sigue siendo la de Sora.
+    const HWND hwnd = reinterpret_cast<HWND>(winId());
+    const LONG_PTR style = GetWindowLongPtr(hwnd, GWL_STYLE);
+    const LONG_PTR wanted = style | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU;
+    if (wanted != style) {
+        SetWindowLongPtr(hwnd, GWL_STYLE, wanted);
+        SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    }
+#endif
+}
+
 void MainWindow::resizeEvent(QResizeEvent* event)
 {
     QMainWindow::resizeEvent(event);

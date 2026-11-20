@@ -15,3 +15,10 @@ sora_add_test(tst_icons)
 sora_add_test(tst_tabmanager)
 sora_add_test(tst_tabstrip)
 sora_add_test(tst_windowframe)
+
+if(WIN32)
+  # Necesita una ventana real de Windows: abre una ventana unos instantes.
+  sora_add_test(tst_nativewindow)
+  set_tests_properties(tst_nativewindow PROPERTIES ENVIRONMENT
+    "QT_QPA_PLATFORM=windows;SORA_TEST_DATA=${CMAKE_CURRENT_SOURCE_DIR}/data")
+endif()
