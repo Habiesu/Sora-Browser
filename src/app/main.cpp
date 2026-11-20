@@ -12,6 +12,13 @@
 #include "browser/Tab.h"
 #include "privacy/AdblockService.h"
 #include "privacy/FilterListStore.h"
+#include "app/SingleInstance.h"
+#include "browser/TabManager.h"
+
+#include <QDir>
+#ifdef Q_OS_WIN
+#include <qt_windows.h>
+#endif
 
 int main(int argc, char* argv[])
 {
@@ -30,6 +37,19 @@ int main(int argc, char* argv[])
     cli.addPositionalArgument(QStringLiteral("url"), QStringLiteral("Dirección o búsqueda a abrir."));
     cli.process(app);
     const bool bench = cli.isSet(benchOption);
+    const QStringList positional = cli.positionalArguments();
+
+    // Si ya hay un Sora abierto, que abra él la dirección (mismo perfil) y este sale enseguida.
+    // --bench siempre mide un arranque propio.
+    sora::SingleInstance instance(QStringLiteral("sora-") + QString::number(qHash(QDir::homePath()), 16));
+    if (!bench) {
+#ifdef Q_OS_WIN
+        AllowSetForegroundWindow(ASFW_ANY); // deja que el Sora abierto se ponga delante
+#endif
+        if (instance.sendToRunning(positional.value(0)))
+            return 0;
+        instance.listen();
+    }
 
     auto* profile = new QWebEngineProfile(QStringLiteral("default"), &app);
 
@@ -38,6 +58,16 @@ int main(int argc, char* argv[])
 
     sora::MainWindow window(profile, adblock);
     window.show();
+    QObject::connect(&instance, &sora::SingleInstance::received, &window, [&window](const QString& input) {
+        if (input.isEmpty())
+            window.newTab();
+        else
+            window.tabs()->newTab(sora::urlFromInput(input));
+        if (window.isMinimized())
+            window.showNormal();
+        window.raise();
+        window.activateWindow();
+    });
 
     qint64 windowShownMs = -1;
     if (bench) {
@@ -51,7 +81,6 @@ int main(int argc, char* argv[])
         }, Qt::SingleShotConnection);
     }
 
-    const QStringList positional = cli.positionalArguments();
     window.navigate(positional.isEmpty() ? QStringLiteral("about:blank") : positional.first());
 
     // El motor se prepara después de mostrar la ventana; hasta entonces no se bloquea nada.
