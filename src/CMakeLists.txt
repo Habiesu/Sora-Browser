@@ -1,5 +1,7 @@
 add_library(sora_core STATIC
   app/MainWindow.h app/MainWindow.cpp
+  browser/Tab.h browser/Tab.cpp
+  browser/TabManager.h browser/TabManager.cpp
   ui/Theme.h ui/Theme.cpp
   ui/Icons.h ui/Icons.cpp
   privacy/AdblockEngine.h privacy/AdblockEngine.cpp
