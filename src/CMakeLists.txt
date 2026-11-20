@@ -1,6 +1,7 @@
 add_library(sora_core STATIC
   app/MainWindow.h app/MainWindow.cpp
   ui/Theme.h ui/Theme.cpp
+  ui/Icons.h ui/Icons.cpp
   privacy/AdblockEngine.h privacy/AdblockEngine.cpp
   privacy/AdblockService.h privacy/AdblockService.cpp
   privacy/RequestInterceptor.h privacy/RequestInterceptor.cpp
