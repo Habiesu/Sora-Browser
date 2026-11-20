@@ -10,12 +10,18 @@
 param(
     [string]$QtVersion = "6.12.0",
     [string]$QtDir = "",
-    [string]$Version = "0.1.0",
+    [string]$Version = "", # por defecto, la de project() en CMakeLists.txt
     [switch]$SkipTests
 )
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
+
+if (-not $Version) {
+    $m = Select-String -Path (Join-Path $root "CMakeLists.txt") -Pattern 'project\(Sora VERSION ([0-9.]+)'
+    if (-not $m) { throw "No se encuentra la versión en CMakeLists.txt." }
+    $Version = $m.Matches[0].Groups[1].Value
+}
 
 function Require([string]$Cmd, [string]$Hint) {
     if (-not (Get-Command $Cmd -ErrorAction SilentlyContinue)) { throw "Falta $Cmd. $Hint" }
