@@ -1,0 +1,2 @@
+# Saltos de línea LF en todos los sistemas (Windows PowerShell 5.1 e Inno Setup los leen bien).
+* text=auto eol=lf
