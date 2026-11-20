@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="1200" height="760" fill="#ffffff"/>
+  <text x="40" y="56" font-size="30" font-weight="600" fill="#1c2330">Icono de Sora — el lobo amable, más serio</text>
+  <text x="40" y="90" font-size="18" fill="#5a6476">Cada una en grande y al tamaño de la barra de tareas (24 px), sobre fondo claro y oscuro.</text>
+
+  <defs>
+    <!-- original, para comparar -->
+    <symbol id="S0" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="22" fill="#1F5C45"/>
+      <path d="M22 44 C18 30 20 18 26 14 C32 16 38 24 40 30 H56 C58 24 64 16 70 14 C76 18 78 30 74 44 C78 62 66 82 48 84 C30 82 18 62 22 44 Z" fill="#F4F1E8"/>
+      <path d="M27 22 C30 24 33 28 34 31 L28 36 Z M69 22 C66 24 63 28 62 31 L68 36 Z" fill="#7FB89A"/>
+      <path d="M36 62 C40 58 56 58 60 62 C60 72 54 78 48 78 C42 78 36 72 36 62 Z" fill="#E3DDCC"/>
+      <ellipse cx="38" cy="50" rx="3.5" ry="4.5" fill="#1F5C45"/>
+      <ellipse cx="58" cy="50" rx="3.5" ry="4.5" fill="#1F5C45"/>
+      <ellipse cx="48" cy="64" rx="5" ry="3.5" fill="#1F5C45"/>
+    </symbol>
+
+    <!-- cabeza seria: orejas altas, mejillas con mechones, hocico largo -->
+    <path id="cabeza" d="M24 44 C20 30 21 16 25 6 C33 11 39 20 42 28 H54 C57 20 63 11 71 6 C75 16 76 30 72 44 L82 56 L71 58 L66 70 L57 82 C54 88 42 88 39 82 L30 70 L25 58 L14 56 Z"/>
+    <path id="orejas" d="M27 15 C31 18 35 23 37 28 L30 34 Z M69 15 C65 18 61 23 59 28 L66 34 Z"/>
+    <path id="hocico" d="M40 58 C43 54 53 54 56 58 L53 78 C51 83 45 83 43 78 Z"/>
+    <path id="ojos" d="M30 46 L44 50 L35 54 Z M66 46 L52 50 L61 54 Z"/>
+    <path id="nariz" d="M43 74 H53 L48 80 Z"/>
+
+    <symbol id="S1" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="22" fill="#1F5C45"/>
+      <use href="#cabeza" fill="#F4F1E8"/>
+      <use href="#orejas" fill="#7FB89A"/>
+      <use href="#hocico" fill="#E3DDCC"/>
+      <use href="#ojos" fill="#1F5C45"/>
+      <use href="#nariz" fill="#1F5C45"/>
+    </symbol>
+
+    <symbol id="S2" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="22" fill="#1F5C45"/>
+      <use href="#cabeza" fill="#F4F1E8"/>
+      <use href="#orejas" fill="#7FB89A"/>
+      <path d="M26 40 L48 30 L70 40 L66 56 L56 58 L48 52 L40 58 L30 56 Z" fill="#B9D9C6"/>
+      <use href="#hocico" fill="#F4F1E8"/>
+      <use href="#ojos" fill="#1F5C45"/>
+      <use href="#nariz" fill="#1F5C45"/>
+    </symbol>
+
+    <symbol id="S3" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="22" fill="#1F5C45"/>
+      <use href="#cabeza" fill="#F4F1E8"/>
+      <use href="#orejas" fill="#7FB89A"/>
+      <use href="#hocico" fill="#E3DDCC"/>
+      <path d="M28 41 L45 46 M68 41 L51 46" stroke="#1F5C45" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M32 48 L44 51 L36 54 Z M64 48 L52 51 L60 54 Z" fill="#1F5C45"/>
+      <use href="#nariz" fill="#1F5C45"/>
+      <path d="M48 30 L48 42" stroke="#7FB89A" stroke-width="3" stroke-linecap="round"/>
+    </symbol>
+  </defs>
+
+  <g transform="translate(40,120)">
+    <rect width="540" height="270" rx="16" fill="#f1f3f6"/>
+    <use href="#S1" x="30" y="30" width="150" height="150"/>
+    <rect x="220" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#S1" x="273" y="56" width="24" height="24"/>
+    <rect x="370" y="40" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#S1" x="423" y="56" width="24" height="24"/>
+    <text x="220" y="140" font-size="26" font-weight="600" fill="#1c2330">S1 · Serio</text>
+    <text x="220" y="172" font-size="18" fill="#5a6476">Orejas altas, ojos rasgados,</text>
+    <text x="220" y="196" font-size="18" fill="#5a6476">hocico largo y mechones.</text>
+  </g>
+  <g transform="translate(620,120)">
+    <rect width="540" height="270" rx="16" fill="#f1f3f6"/>
+    <use href="#S2" x="30" y="30" width="150" height="150"/>
+    <rect x="220" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#S2" x="273" y="56" width="24" height="24"/>
+    <rect x="370" y="40" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#S2" x="423" y="56" width="24" height="24"/>
+    <text x="220" y="140" font-size="26" font-weight="600" fill="#1c2330">S2 · Con máscara</text>
+    <text x="220" y="172" font-size="18" fill="#5a6476">Antifaz verde alrededor de los</text>
+    <text x="220" y="196" font-size="18" fill="#5a6476">ojos, como el pelaje del lobo.</text>
+  </g>
+  <g transform="translate(40,410)">
+    <rect width="540" height="270" rx="16" fill="#f1f3f6"/>
+    <use href="#S3" x="30" y="30" width="150" height="150"/>
+    <rect x="220" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#S3" x="273" y="56" width="24" height="24"/>
+    <rect x="370" y="40" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#S3" x="423" y="56" width="24" height="24"/>
+    <text x="220" y="140" font-size="26" font-weight="600" fill="#1c2330">S3 · Ceño fruncido</text>
+    <text x="220" y="172" font-size="18" fill="#5a6476">Cejas marcadas: el más</text>
+    <text x="220" y="196" font-size="18" fill="#5a6476">firme y vigilante.</text>
+  </g>
+  <g transform="translate(620,410)">
+    <rect width="540" height="270" rx="16" fill="#f1f3f6"/>
+    <use href="#S0" x="30" y="30" width="150" height="150"/>
+    <rect x="220" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#S0" x="273" y="56" width="24" height="24"/>
+    <rect x="370" y="40" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#S0" x="423" y="56" width="24" height="24"/>
+    <text x="220" y="140" font-size="26" font-weight="600" fill="#5a6476">S · Original</text>
+    <text x="220" y="172" font-size="18" fill="#5a6476">El amable, para comparar.</text>
+  </g>
+</svg>

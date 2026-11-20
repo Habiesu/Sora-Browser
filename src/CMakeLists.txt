@@ -22,4 +22,7 @@ if(WIN32)
 endif()
 
 qt_add_executable(sora WIN32 app/main.cpp)
+if(WIN32)
+  target_sources(sora PRIVATE app/sora.rc)
+endif()
 target_link_libraries(sora PRIVATE sora_core)

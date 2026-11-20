@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="860" viewBox="0 0 1200 860" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="1200" height="860" fill="#ffffff"/>
+  <text x="40" y="56" font-size="30" font-weight="600" fill="#1c2330">Icono de Sora — alternativas con lobo</text>
+  <text x="40" y="90" font-size="18" fill="#5a6476">Cada una en grande y al tamaño de la barra de tareas (24 px), sobre fondo claro y oscuro.</text>
+
+  <defs>
+    <!-- cabeza de lobo geométrica, de frente -->
+    <path id="lobo" d="M24 12 L39 33 H57 L72 12 L78 46 L66 62 L58 80 L48 87 L38 80 L30 62 L18 46 Z"/>
+    <symbol id="G" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="22" fill="#1F5C45"/>
+      <use href="#lobo" fill="#F4F1E8"/>
+      <path d="M34 50 L44 54 L36 56 Z M62 50 L52 54 L60 56 Z" fill="#1F5C45"/>
+      <path d="M43 74 H53 L48 80 Z" fill="#1F5C45"/>
+    </symbol>
+    <symbol id="H" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="22" fill="#1F5C45"/>
+      <use href="#lobo" fill="#F4F1E8"/>
+      <path d="M48 36 L55 48 H51 L57 58 H50 V64 H46 V58 H39 L45 48 H41 Z" fill="#1F5C45"/>
+      <path d="M43 74 H53 L48 80 Z" fill="#1F5C45"/>
+    </symbol>
+    <symbol id="I" viewBox="0 0 96 96">
+      <path d="M48 4 L86 18 V46 C86 69 69 85 48 93 C27 85 10 69 10 46 V18 Z" fill="#1F5C45"/>
+      <g transform="translate(48 50) scale(0.62) translate(-48 -50)">
+        <use href="#lobo" fill="#F4F1E8"/>
+        <path d="M34 50 L44 54 L36 56 Z M62 50 L52 54 L60 56 Z" fill="#1F5C45"/>
+        <path d="M43 74 H53 L48 80 Z" fill="#1F5C45"/>
+      </g>
+    </symbol>
+    <symbol id="J" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="22" fill="#1F5C45"/>
+      <circle cx="66" cy="28" r="12" fill="#F4F1E8"/>
+      <path d="M8 84 L18 64 L14 64 L22 50 L30 64 L26 64 L36 84 Z" fill="#7FB89A"/>
+      <path d="M62 84 L72 62 L68 62 L77 46 L86 62 L82 62 L92 84 Z" fill="#7FB89A"/>
+      <path d="M34 84 L38 66 L33 56 L27 40 L37 46 L40 34 L45 46 L52 50 L56 62 L60 84 Z" fill="#F4F1E8"/>
+    </symbol>
+    <symbol id="K" viewBox="0 0 96 96">
+      <circle cx="48" cy="48" r="46" fill="#1F5C45"/>
+      <g transform="translate(48 50) scale(0.78) translate(-48 -50)">
+        <path d="M24 12 L39 33 H57 L72 12 L78 46 L66 62 L58 80 L48 87 L38 80 L30 62 L18 46 Z" fill="none" stroke="#F4F1E8" stroke-width="7" stroke-linejoin="round"/>
+        <path d="M34 50 L44 54 L36 56 Z M62 50 L52 54 L60 56 Z" fill="#F4F1E8"/>
+      </g>
+    </symbol>
+    <symbol id="L" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="22" fill="#1F5C45"/>
+      <path d="M24 12 L39 33 H48 V87 L38 80 L30 62 L18 46 Z" fill="#F4F1E8"/>
+      <path d="M72 12 L57 33 H48 V87 L58 80 L66 62 L78 46 Z" fill="#7FB89A"/>
+      <path d="M34 50 L44 54 L36 56 Z" fill="#1F5C45"/>
+      <path d="M62 50 L52 54 L60 56 Z" fill="#1F5C45"/>
+      <path d="M43 74 H53 L48 80 Z" fill="#1F5C45"/>
+    </symbol>
+  </defs>
+
+  <g transform="translate(40,120)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#G" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#G" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#G" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">G · Lobo</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">Cabeza de lobo geométrica,</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">de frente.</text>
+  </g>
+  <g transform="translate(420,120)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#H" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#H" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#H" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">H · Lobo con pino</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">El pino dibujado en la frente</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">del lobo.</text>
+  </g>
+  <g transform="translate(800,120)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#I" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#I" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#I" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">I · Escudo con lobo</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">El lobo como guardián de la</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">privacidad.</text>
+  </g>
+
+  <g transform="translate(40,440)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#J" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#J" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#J" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">J · Aullido</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">Lobo aullando a la luna entre</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">pinos. Se pierde en pequeño.</text>
+  </g>
+  <g transform="translate(420,440)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#K" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#K" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#K" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">K · Lobo de línea</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">Solo el contorno, en círculo.</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">Más ligero.</text>
+  </g>
+  <g transform="translate(800,440)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#L" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#L" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#L" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">L · Lobo bicolor</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">Media cara clara y media verde,</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">con volumen.</text>
+  </g>
+
+  <text x="40" y="790" font-size="20" font-weight="600" fill="#1c2330">Colores:</text>
+  <rect x="140" y="768" width="34" height="34" rx="6" fill="#1F5C45"/><text x="184" y="792" font-size="18" fill="#1c2330">verde pino (principal)</text>
+  <rect x="420" y="768" width="34" height="34" rx="6" fill="#7FB89A"/><text x="464" y="792" font-size="18" fill="#1c2330">verde claro (detalle)</text>
+  <rect x="690" y="768" width="34" height="34" rx="6" fill="#F4F1E8" stroke="#d0d4da"/><text x="734" y="792" font-size="18" fill="#1c2330">blanco hueso (figura)</text>
+</svg>

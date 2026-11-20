@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="860" viewBox="0 0 1200 860" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="1200" height="860" fill="#ffffff"/>
+  <text x="40" y="56" font-size="30" font-weight="600" fill="#1c2330">Icono de Sora — lobos distintos</text>
+  <text x="40" y="90" font-size="18" fill="#5a6476">Cada una en grande y al tamaño de la barra de tareas (24 px), sobre fondo claro y oscuro.</text>
+
+  <defs>
+    <!-- M: cabeza aullando, de perfil, hocico hacia arriba -->
+    <symbol id="M" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="22" fill="#1F5C45"/>
+      <circle cx="72" cy="24" r="10" fill="#7FB89A"/>
+      <path d="M30 96 C31 82 29 70 24 60 L13 30 L26 40 L17 16 L23 13 C30 20 36 27 43 31 L47 29 L55 12 L59 33 C67 41 72 56 74 72 L76 96 Z" fill="#F4F1E8"/>
+      <circle cx="42" cy="37" r="2.4" fill="#1F5C45"/>
+    </symbol>
+    <!-- N: cabeza de perfil, tranquila, mirando a la izquierda -->
+    <symbol id="N" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="22" fill="#1F5C45"/>
+      <path d="M12 52 L14 47 L32 40 L42 32 L48 14 L55 30 L60 16 L66 34 L74 46 L80 62 L84 86 H44 L40 70 L32 62 L18 60 Z" fill="#F4F1E8"/>
+      <path d="M12 52 L14 47 L18 49 L16 54 Z" fill="#1F5C45"/>
+      <path d="M40 44 L48 42 L44 47 Z" fill="#1F5C45"/>
+      <path d="M18 60 L30 58 L32 62 Z" fill="#7FB89A"/>
+    </symbol>
+    <!-- O: lobo sentado aullando, cuerpo entero, con luna -->
+    <symbol id="O" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="22" fill="#1F5C45"/>
+      <ellipse cx="48" cy="62" rx="20" ry="17" fill="#F4F1E8"/>
+      <ellipse cx="24" cy="38" rx="8" ry="11" transform="rotate(-20 24 38)" fill="#F4F1E8"/>
+      <ellipse cx="40" cy="26" rx="8" ry="11" transform="rotate(-6 40 26)" fill="#F4F1E8"/>
+      <ellipse cx="56" cy="26" rx="8" ry="11" transform="rotate(6 56 26)" fill="#F4F1E8"/>
+      <ellipse cx="72" cy="38" rx="8" ry="11" transform="rotate(20 72 38)" fill="#F4F1E8"/>
+      <path d="M40 18 L40 12 M56 18 L56 12 M22 28 L19 22 M74 28 L77 22" stroke="#7FB89A" stroke-width="3" stroke-linecap="round"/>
+    </symbol>
+    <!-- P: cabeza de facetas (low-poly), tres tonos -->
+    <symbol id="P" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="22" fill="#1F5C45"/>
+      <path d="M22 12 L38 34 L30 50 L16 46 Z" fill="#F4F1E8"/>
+      <path d="M74 12 L58 34 L66 50 L80 46 Z" fill="#B9D9C6"/>
+      <path d="M38 34 H58 L48 50 Z" fill="#F4F1E8"/>
+      <path d="M38 34 L48 50 L30 50 Z" fill="#B9D9C6"/>
+      <path d="M58 34 L66 50 L48 50 Z" fill="#7FB89A"/>
+      <path d="M16 46 L30 50 L36 64 Z" fill="#B9D9C6"/>
+      <path d="M80 46 L66 50 L60 64 Z" fill="#7FB89A"/>
+      <path d="M30 50 L48 50 L48 86 L36 64 Z" fill="#F4F1E8"/>
+      <path d="M66 50 L48 50 L48 86 L60 64 Z" fill="#B9D9C6"/>
+      <path d="M43 76 H53 L48 84 Z" fill="#1F5C45"/>
+      <path d="M33 52 L42 55 L35 57 Z M63 52 L54 55 L61 57 Z" fill="#1F5C45"/>
+    </symbol>
+    <!-- Q: solo los ojos y las orejas en la oscuridad del bosque -->
+    <symbol id="Q" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="22" fill="#163F30"/>
+      <path d="M18 72 L26 56 L22 56 L30 40 L38 56 L34 56 L42 72 Z" fill="#1F5C45"/>
+      <path d="M58 76 L66 58 L62 58 L72 38 L82 58 L78 58 L86 76 Z" fill="#1F5C45"/>
+      <path d="M20 46 L28 16 L42 38 Z M76 46 L68 16 L54 38 Z" fill="#2E7A5D"/>
+      <path d="M28 50 L44 56 L32 60 Z M68 50 L52 56 L64 60 Z" fill="#F4F1E8"/>
+    </symbol>
+    <!-- R: cabeza de frente con luna creciente detrás -->
+    <symbol id="R" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="22" fill="#1F5C45"/>
+      <path d="M48 6 A40 40 0 1 0 90 54 A32 32 0 1 1 48 6 Z" fill="#7FB89A"/>
+      <g transform="translate(48 54) scale(0.7) translate(-48 -50)">
+        <path d="M24 12 L39 33 H57 L72 12 L78 46 L66 62 L58 80 L48 87 L38 80 L30 62 L18 46 Z" fill="#F4F1E8"/>
+        <path d="M34 50 L44 54 L36 56 Z M62 50 L52 54 L60 56 Z" fill="#1F5C45"/>
+        <path d="M43 74 H53 L48 80 Z" fill="#1F5C45"/>
+      </g>
+    </symbol>
+  </defs>
+
+  <g transform="translate(40,120)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#M" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#M" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#M" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">M · Aullido de perfil</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">Cabeza levantada aullando a</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">la luna.</text>
+  </g>
+  <g transform="translate(420,120)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#N" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#N" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#N" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">N · Perfil</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">Cabeza de lado, mirando</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">al frente. Sobria.</text>
+  </g>
+  <g transform="translate(800,120)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#O" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#O" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#O" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">O · Huella</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">Huella de lobo con garras. Se</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">reconoce al instante.</text>
+  </g>
+
+  <g transform="translate(40,440)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#P" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#P" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#P" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">P · Facetas</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">Cabeza de frente hecha de</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">triángulos en tres verdes.</text>
+  </g>
+  <g transform="translate(420,440)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#Q" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#Q" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#Q" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">Q · Ojos en el bosque</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">Solo orejas y ojos entre pinos.</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">Misterioso.</text>
+  </g>
+  <g transform="translate(800,440)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#R" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#R" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#R" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">R · Lobo y luna</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">Cabeza de frente delante de</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">una luna creciente.</text>
+  </g>
+
+  <text x="40" y="790" font-size="20" font-weight="600" fill="#1c2330">Colores:</text>
+  <rect x="140" y="768" width="34" height="34" rx="6" fill="#1F5C45"/><text x="184" y="792" font-size="18" fill="#1c2330">verde pino (principal)</text>
+  <rect x="420" y="768" width="34" height="34" rx="6" fill="#7FB89A"/><text x="464" y="792" font-size="18" fill="#1c2330">verde claro (detalle)</text>
+  <rect x="690" y="768" width="34" height="34" rx="6" fill="#F4F1E8" stroke="#d0d4da"/><text x="734" y="792" font-size="18" fill="#1c2330">blanco hueso (figura)</text>
+</svg>

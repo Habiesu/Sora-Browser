@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="860" viewBox="0 0 1200 860" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="1200" height="860" fill="#ffffff"/>
+  <text x="40" y="56" font-size="30" font-weight="600" fill="#1c2330">Icono de Sora — más lobos</text>
+  <text x="40" y="90" font-size="18" fill="#5a6476">Cada una en grande y al tamaño de la barra de tareas (24 px), sobre fondo claro y oscuro.</text>
+
+  <defs>
+    <!-- S: lobo redondeado, amable -->
+    <symbol id="S" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="22" fill="#1F5C45"/>
+      <path d="M22 44 C18 30 20 18 26 14 C32 16 38 24 40 30 H56 C58 24 64 16 70 14 C76 18 78 30 74 44 C78 62 66 82 48 84 C30 82 18 62 22 44 Z" fill="#F4F1E8"/>
+      <path d="M27 22 C30 24 33 28 34 31 L28 36 Z M69 22 C66 24 63 28 62 31 L68 36 Z" fill="#7FB89A"/>
+      <path d="M36 62 C40 58 56 58 60 62 C60 72 54 78 48 78 C42 78 36 72 36 62 Z" fill="#E3DDCC"/>
+      <ellipse cx="38" cy="50" rx="3.5" ry="4.5" fill="#1F5C45"/>
+      <ellipse cx="58" cy="50" rx="3.5" ry="4.5" fill="#1F5C45"/>
+      <ellipse cx="48" cy="64" rx="5" ry="3.5" fill="#1F5C45"/>
+    </symbol>
+    <!-- T: emblema hexagonal -->
+    <symbol id="T" viewBox="0 0 96 96">
+      <path d="M48 4 L86 26 V70 L48 92 L10 70 V26 Z" fill="#1F5C45"/>
+      <path d="M48 12 L79 30 V66 L48 84 L17 66 V30 Z" fill="none" stroke="#7FB89A" stroke-width="2.5"/>
+      <g transform="translate(48 50) scale(0.62) translate(-48 -50)">
+        <path d="M24 12 L39 33 H57 L72 12 L78 46 L66 62 L58 80 L48 87 L38 80 L30 62 L18 46 Z" fill="#F4F1E8"/>
+        <path d="M34 50 L44 54 L36 56 Z M62 50 L52 54 L60 56 Z" fill="#1F5C45"/>
+        <path d="M43 74 H53 L48 80 Z" fill="#1F5C45"/>
+      </g>
+    </symbol>
+    <!-- U: marca mínima, orejas y hocico -->
+    <symbol id="U" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="22" fill="#1F5C45"/>
+      <path d="M18 54 L28 18 L44 42 Z" fill="#F4F1E8"/>
+      <path d="M78 54 L68 18 L52 42 Z" fill="#F4F1E8"/>
+      <path d="M30 56 L48 80 L66 56" fill="none" stroke="#F4F1E8" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <!-- V: origami -->
+    <symbol id="V" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="22" fill="#1F5C45"/>
+      <path d="M16 18 L40 34 L16 50 Z" fill="#B9D9C6"/>
+      <path d="M80 18 L56 34 L80 50 Z" fill="#7FB89A"/>
+      <path d="M16 34 H80 L48 84 Z" fill="#F4F1E8"/>
+      <path d="M48 34 L80 34 L48 84 Z" fill="#E3DDCC"/>
+      <path d="M43 72 H53 L48 80 Z" fill="#1F5C45"/>
+    </symbol>
+    <!-- W: luna llena con el lobo aullando dentro -->
+    <symbol id="W" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="22" fill="#1F5C45"/>
+      <circle cx="48" cy="48" r="36" fill="#F4F1E8"/>
+      <clipPath id="luna"><circle cx="48" cy="48" r="36"/></clipPath>
+      <g clip-path="url(#luna)" transform="translate(6 10) scale(0.9)">
+        <path d="M30 96 C31 82 29 70 24 60 L13 30 L26 40 L17 16 L23 13 C30 20 36 27 43 31 L47 29 L55 12 L59 33 C67 41 72 56 74 72 L76 96 Z" fill="#1F5C45"/>
+      </g>
+    </symbol>
+    <!-- X: lobo con forma de S -->
+    <symbol id="X" viewBox="0 0 96 96">
+      <rect width="96" height="96" rx="22" fill="#1F5C45"/>
+      <path d="M28 40 L34 10 L44 24 H52 L62 10 L68 40 L62 46 H70 L80 64 H56 V82 H40 V64 H16 L26 46 H34 Z" fill="#F4F1E8"/>
+      <path d="M34 32 L44 36 L37 38 Z M62 32 L52 36 L59 38 Z" fill="#1F5C45"/>
+      <path d="M45 44 H51 L48 48 Z" fill="#1F5C45"/>
+    </symbol>
+  </defs>
+
+  <g transform="translate(40,120)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#S" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#S" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#S" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">S · Lobo amable</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">Formas redondas, cercano. Más</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">perro que lobo.</text>
+  </g>
+  <g transform="translate(420,120)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#T" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#T" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#T" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">T · Emblema</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">El lobo dentro de un hexágono,</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">como una insignia.</text>
+  </g>
+  <g transform="translate(800,120)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#U" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#U" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#U" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">U · Marca mínima</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">Solo orejas y hocico. Muy</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">limpio en pequeño.</text>
+  </g>
+
+  <g transform="translate(40,440)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#V" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#V" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#V" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">V · Origami</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">Como un lobo de papel</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">doblado.</text>
+  </g>
+  <g transform="translate(420,440)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#W" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#W" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#W" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">W · Aullido en la luna</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">La silueta aullando recortada</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">sobre la luna llena.</text>
+  </g>
+  <g transform="translate(800,440)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#X" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#X" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#X" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">X · Lobo-pino</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">Un pino cuya copa es la cabeza</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">del lobo.</text>
+  </g>
+
+  <text x="40" y="790" font-size="20" font-weight="600" fill="#1c2330">Colores:</text>
+  <rect x="140" y="768" width="34" height="34" rx="6" fill="#1F5C45"/><text x="184" y="792" font-size="18" fill="#1c2330">verde pino (principal)</text>
+  <rect x="420" y="768" width="34" height="34" rx="6" fill="#7FB89A"/><text x="464" y="792" font-size="18" fill="#1c2330">verde claro (detalle)</text>
+  <rect x="690" y="768" width="34" height="34" rx="6" fill="#F4F1E8" stroke="#d0d4da"/><text x="734" y="792" font-size="18" fill="#1c2330">blanco hueso (figura)</text>
+</svg>

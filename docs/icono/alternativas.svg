@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="860" viewBox="0 0 1200 860" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="1200" height="860" fill="#ffffff"/>
+  <text x="40" y="56" font-size="30" font-weight="600" fill="#1c2330">Icono de Sora — alternativas en verde pino</text>
+  <text x="40" y="90" font-size="18" fill="#5a6476">Cada una en grande y al tamaño de la barra de tareas (24 px), sobre fondo claro y oscuro.</text>
+
+  <defs>
+    <symbol id="A" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#1F5C45"/><path d="M48 18 L64 42 H56 L70 62 H54 V76 H42 V62 H26 L40 42 H32 Z" fill="#F4F1E8"/></symbol>
+    <symbol id="B" viewBox="0 0 96 96"><circle cx="48" cy="48" r="46" fill="#1F5C45"/><path d="M14 60 A34 34 0 0 1 82 60 Z" fill="#7FB89A"/><path d="M8 62 H88" stroke="#F4F1E8" stroke-width="6" stroke-linecap="round"/><path d="M22 72 H74" stroke="#F4F1E8" stroke-width="5" stroke-linecap="round" opacity="0.7"/></symbol>
+    <symbol id="C" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#1F5C45"/><path d="M66 30 C60 22 36 22 34 34 C32 46 62 46 62 60 C62 74 36 74 30 66" fill="none" stroke="#F4F1E8" stroke-width="11" stroke-linecap="round"/></symbol>
+    <symbol id="D" viewBox="0 0 96 96"><path d="M48 6 L84 20 V46 C84 68 68 84 48 92 C28 84 12 68 12 46 V20 Z" fill="#1F5C45"/><path d="M48 26 L60 44 H54 L64 60 H52 V70 H44 V60 H32 L42 44 H36 Z" fill="#F4F1E8"/></symbol>
+    <symbol id="E" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#1F5C45"/><path d="M18 36 C30 28 42 44 54 36 C64 30 72 32 78 36" fill="none" stroke="#F4F1E8" stroke-width="7" stroke-linecap="round"/><path d="M18 52 C30 44 42 60 54 52 C64 46 72 48 78 52" fill="none" stroke="#B9D9C6" stroke-width="7" stroke-linecap="round"/><path d="M18 68 C30 60 42 76 54 68 C64 62 72 64 78 68" fill="none" stroke="#7FB89A" stroke-width="7" stroke-linecap="round"/></symbol>
+    <symbol id="F" viewBox="0 0 96 96"><rect width="96" height="96" rx="22" fill="#1F5C45"/><path d="M14 74 L34 40 L46 58 L60 30 L82 74 Z" fill="#7FB89A"/><path d="M50 40 L60 30 L70 50 Z" fill="#F4F1E8"/><circle cx="30" cy="26" r="7" fill="#F4F1E8"/></symbol>
+  </defs>
+
+  <!-- fila 1 -->
+  <g transform="translate(40,120)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#A" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#A" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#A" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">A · Pino</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">Silueta de pino. La más clara</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">en pequeño.</text>
+  </g>
+  <g transform="translate(420,120)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#B" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#B" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#B" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">B · Horizonte</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">Sol saliendo: "sora" significa</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">cielo en japonés.</text>
+  </g>
+  <g transform="translate(800,120)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#C" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#C" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#C" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">C · Letra S</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">La inicial de Sora, de trazo</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">redondeado.</text>
+  </g>
+
+  <!-- fila 2 -->
+  <g transform="translate(40,440)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#D" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#D" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#D" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">D · Escudo con pino</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">El pino dentro de un escudo:</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">naturaleza y privacidad.</text>
+  </g>
+  <g transform="translate(420,440)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#E" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#E" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#E" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">E · Niebla</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">Tres capas de niebla, como el</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476">nombre de la interfaz.</text>
+  </g>
+  <g transform="translate(800,440)">
+    <rect width="360" height="300" rx="16" fill="#f1f3f6"/>
+    <use href="#F" x="30" y="30" width="140" height="140"/>
+    <rect x="200" y="40" width="130" height="56" rx="10" fill="#e9edf3"/><use href="#F" x="253" y="56" width="24" height="24"/>
+    <rect x="200" y="110" width="130" height="56" rx="10" fill="#1b1f27"/><use href="#F" x="253" y="126" width="24" height="24"/>
+    <text x="30" y="220" font-size="26" font-weight="600" fill="#1c2330">F · Monte y cielo</text>
+    <text x="30" y="254" font-size="18" fill="#5a6476">Montaña con nieve y sol.</text>
+    <text x="30" y="278" font-size="18" fill="#5a6476"> </text>
+  </g>
+
+  <!-- colores -->
+  <text x="40" y="790" font-size="20" font-weight="600" fill="#1c2330">Colores:</text>
+  <rect x="140" y="768" width="34" height="34" rx="6" fill="#1F5C45"/><text x="184" y="792" font-size="18" fill="#1c2330">verde pino (principal)</text>
+  <rect x="420" y="768" width="34" height="34" rx="6" fill="#7FB89A"/><text x="464" y="792" font-size="18" fill="#1c2330">verde claro (detalle)</text>
+  <rect x="690" y="768" width="34" height="34" rx="6" fill="#F4F1E8" stroke="#d0d4da"/><text x="734" y="792" font-size="18" fill="#1c2330">blanco hueso (figura)</text>
+</svg>

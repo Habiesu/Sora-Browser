@@ -1,0 +1,2 @@
+// Icono del ejecutable. Qt usa IDI_ICON1 como icono de las ventanas en Windows (barra de tareas).
+IDI_ICON1 ICON "../../assets/sora.ico"
