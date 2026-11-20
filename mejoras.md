@@ -11,6 +11,20 @@ Lista viva de cosas vistas al trabajar en Sora que no son urgentes. Al hacer una
   con caché frente al de Chrome. Para saberlo: medir con las listas desactivadas y con el
   interceptor vacío.
 
+- **El arranque subió ~40 ms con la interfaz Niebla** (Hito 1: 209 ms; Hito 2: 251 ms; Chrome
+  247 → 267 ms el mismo día). Sigue por debajo de Chrome. Candidatos: aplicar la hoja de estilos
+  de toda la ventana antes de `show()` y crear los iconos al arrancar. Medir con `sora --bench`.
+- **Esc no para la carga** (en Chrome sí): un atajo global le quitaría Esc a la barra de
+  direcciones. Hacerlo en la vista web (tecla en la página) o solo cuando la dirección no tiene
+  el foco.
+- **Con más pestañas de las que caben**, el "+" se coloca junto a las flechas de desplazamiento y
+  tapa en parte la última pestaña visible.
+
+## Sin probar
+
+- **Linux:** la ventana sin marco (franja de 4 px para redimensionar, `startSystemMove`) no se ha
+  compilado ni probado; solo hay Windows en este PC.
+
 ## Compilación en Windows
 
 - **Qt publica WebEngine recompilado en subcarpetas numeradas** (`6120/61400/`). `fetch-qt.py`

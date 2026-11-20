@@ -52,13 +52,18 @@ Medir contra Chrome: `powershell -ExecutionPolicy Bypass -File bench\bench.ps1 -
 - Rama de trabajo: **`ccr-765bf7fa-sutn5o`**. No subir `build*/`, `.qt/`, `dist/` ni `.superpowers/`.
 - No hay GitHub Actions (sin minutos): las pruebas en Windows se hacen en el PC del usuario.
 - Cada hito nuevo se planifica antes de programarlo (`docs/superpowers/plans/`).
+- Respóndeme directo.
+- No me expliques lo que no he preguntado.
 
 ## Estado
 
-- **Hito 1 (prototipo medible):** código hecho y probado en Linux (tareas 1–6 y correcciones de la
-  revisión). Pendiente: compilar en Windows con `scripts/build-windows.ps1` (nunca probado en
-  Windows), generar el instalador y medir contra Chrome (resultados en `bench/results/`).
-  Si Sora no iguala a Chrome en arranque o memoria con una pestaña, parar y hablarlo con el usuario.
-- **Siguientes:** 2 Interfaz Niebla · 3 Historial, marcadores, sesión · 4 Privacidad (escudo,
+- **Hito 1 (prototipo medible):** hecho. Compila y pasa las pruebas en Windows; medido en
+  `bench/results/2026-11-20-hito1.md`.
+- **Hito 2 (interfaz Niebla):** hecho (plan `docs/superpowers/plans/2026-11-20-hito2-niebla.md`,
+  capturas en `hito2-capturas/`). Arranque y memoria siguen ≤ Chrome
+  (`bench/results/2026-11-20-hito2.md`). Pendiente de probar a mano por el usuario: Snap Layouts al
+  pasar sobre maximizar, arrastrar y redimensionar con el ratón.
+  Si Sora deja de igualar a Chrome en arranque o memoria con una pestaña, parar y hablarlo con el usuario.
+- **Siguientes:** 3 Historial, marcadores, sesión · 4 Privacidad (escudo,
   HTTPS, cookies, Safe Browsing, listas diarias) · 5 Pestañas dormidas · 6 Descargas, modo privado,
   ajustes · 7 Instalador con autoactualización · Experimento DRM.
