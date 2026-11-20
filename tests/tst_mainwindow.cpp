@@ -1,13 +1,123 @@
 #include <QtTest>
 #include <QUrlQuery>
 #include <QToolButton>
+#include <QWebEngineProfile>
 #include "app/MainWindow.h"
+#include "browser/Tab.h"
+#include "browser/TabManager.h"
+#include "privacy/AdblockService.h"
+#include "ui/TabStrip.h"
+#include "ui/TitleBar.h"
 #include "ui/Omnibox.h"
 #include "ui/Toolbar.h"
 
 class TestMainWindow : public QObject {
     Q_OBJECT
+    QWebEngineProfile* m_profile = nullptr;
+    sora::AdblockService m_adblock;
+
+    // Ventana visible y activa: los atajos solo funcionan en la ventana activa.
+    std::unique_ptr<sora::MainWindow> openWindow()
+    {
+        auto w = std::make_unique<sora::MainWindow>(m_profile, &m_adblock);
+        w->show();
+        w->activateWindow();
+        if (!QTest::qWaitForWindowActive(w.get()))
+            qWarning("la ventana no llegó a activarse");
+        return w;
+    }
+    static QToolButton* shieldOf(sora::MainWindow& w) { return w.findChild<QToolButton*>("ShieldButton"); }
+
 private slots:
+    void initTestCase() { m_profile = new QWebEngineProfile(this); }
+
+    void startsWithOneTab()
+    {
+        auto w = openWindow();
+        QCOMPARE(w->tabs()->count(), 1);
+        QVERIFY(w->currentTab());
+    }
+    void titleBarStartsAtTheTop()
+    {
+        // La barra de título propia ocupa el sitio de la nativa: nada de reservar el "área segura".
+        auto w = openWindow();
+        QVERIFY(!w->testAttribute(Qt::WA_ContentsMarginsRespectsSafeArea));
+        QVERIFY(!w->centralWidget()->testAttribute(Qt::WA_ContentsMarginsRespectsSafeArea));
+        QCOMPARE(w->findChild<sora::TitleBar*>()->mapTo(w.get(), QPoint(0, 0)).y(), 0);
+    }
+    void ctrlTOpensTab()
+    {
+        auto w = openWindow();
+        QTest::keyClick(w.get(), Qt::Key_T, Qt::ControlModifier);
+        QCOMPARE(w->tabs()->count(), 2);
+        QCOMPARE(w->tabs()->currentIndex(), 1);
+        QCOMPARE(w->findChild<sora::TabStrip*>()->count(), 2);
+    }
+    void ctrlWClosesTab()
+    {
+        auto w = openWindow();
+        w->tabs()->newTab();
+        QTest::keyClick(w.get(), Qt::Key_W, Qt::ControlModifier);
+        QCOMPARE(w->tabs()->count(), 1);
+        QCOMPARE(w->findChild<sora::TabStrip*>()->count(), 1);
+    }
+    void ctrlNumberSelects()
+    {
+        auto w = openWindow();
+        w->tabs()->newTab();
+        w->tabs()->newTab();
+        QTest::keyClick(w.get(), Qt::Key_1, Qt::ControlModifier);
+        QCOMPARE(w->tabs()->currentIndex(), 0);
+        QTest::keyClick(w.get(), Qt::Key_9, Qt::ControlModifier);
+        QCOMPARE(w->tabs()->currentIndex(), 2);
+        QCOMPARE(w->findChild<sora::TabStrip*>()->currentIndex(), 2);
+    }
+    void tabTitleFollowsPage()
+    {
+        auto w = openWindow();
+        w->currentTab()->setHtml("<title>Hola</title>");
+        QTRY_COMPARE(w->findChild<sora::TabStrip*>()->tabText(0), QString("Hola"));
+        QCOMPARE(w->windowTitle(), QString::fromUtf8("Hola — Sora"));
+    }
+    void shieldFollowsCurrentTab()
+    {
+        auto w = openWindow();
+        w->tabs()->tab(0)->countBlocked();
+        QCOMPARE(shieldOf(*w)->text(), QString("1"));
+        w->tabs()->newTab();
+        QCOMPARE(shieldOf(*w)->text(), QString("0"));
+        w->tabs()->setCurrentIndex(0);
+        QCOMPARE(shieldOf(*w)->text(), QString("1"));
+    }
+    void darkSchemeRestyles()
+    {
+        auto w = openWindow();
+        w->applyColorScheme(Qt::ColorScheme::Dark);
+        QVERIFY(w->styleSheet().contains("#1b1f27"));
+        w->applyColorScheme(Qt::ColorScheme::Light);
+        QVERIFY(w->styleSheet().contains("#e9edf3"));
+    }
+    void closingLastTabClosesWindow()
+    {
+        auto w = openWindow();
+        QTest::keyClick(w.get(), Qt::Key_W, Qt::ControlModifier);
+        QTRY_VERIFY(!w->isVisible());
+    }
+    void stripCloseButtonClosesTab()
+    {
+        auto w = openWindow();
+        w->tabs()->newTab();
+        emit w->findChild<sora::TabStrip*>()->tabCloseRequested(0);
+        QCOMPARE(w->tabs()->count(), 1);
+    }
+    void movingTabsKeepsOrder()
+    {
+        auto w = openWindow();
+        w->tabs()->newTab();
+        sora::Tab* first = w->tabs()->tab(0);
+        w->findChild<sora::TabStrip*>()->moveTab(0, 1);
+        QCOMPARE(w->tabs()->tab(1), first);
+    }
     void bareDomainBecomesHttps() { QCOMPARE(sora::urlFromInput("example.com"), QUrl("https://example.com")); }
     void explicitSchemeIsKept() { QCOMPARE(sora::urlFromInput("http://a.b/c"), QUrl("http://a.b/c")); }
     void textBecomesSearch() {

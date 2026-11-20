@@ -85,6 +85,21 @@ private slots:
         QCOMPARE(tabs.tab(0)->blockedCount(), 0);
     }
 
+    void tabTracksLoading()
+    {
+        QStackedWidget stack;
+        TabManager tabs(m_profile, &m_adblock, &stack);
+        Tab* tab = tabs.newTab();
+        bool loadingWhenStarted = false;
+        connect(tab, &Tab::loadStarted, this, [&] { loadingWhenStarted = tab->isLoading(); });
+        QSignalSpy loaded(tab, &Tab::loadFinished);
+        QVERIFY(!tab->isLoading());
+        tab->setHtml("<p>x</p>");
+        QTRY_COMPARE(loaded.count(), 1);
+        QVERIFY(loadingWhenStarted);
+        QVERIFY(!tab->isLoading());
+    }
+
     void popupOpensNextToCurrent()
     {
         QStackedWidget stack;

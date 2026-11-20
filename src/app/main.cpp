@@ -6,13 +6,12 @@
 #include <cstdio>
 #include <QNetworkAccessManager>
 #include <QStandardPaths>
-#include <QStatusBar>
 #include <QWebEngineProfile>
 
 #include "app/MainWindow.h"
+#include "browser/Tab.h"
 #include "privacy/AdblockService.h"
 #include "privacy/FilterListStore.h"
-#include "privacy/RequestInterceptor.h"
 
 int main(int argc, char* argv[])
 {
@@ -36,18 +35,14 @@ int main(int argc, char* argv[])
 
     auto* adblock = new sora::AdblockService(&app);
 
-    sora::MainWindow window(profile);
-    auto* interceptor = new sora::RequestInterceptor(adblock, window.view()->page());
-    window.view()->page()->setUrlRequestInterceptor(interceptor);
-    QObject::connect(interceptor, &sora::RequestInterceptor::blocked, &window,
-                     [&window] { window.countBlocked(); }, Qt::QueuedConnection);
+    sora::MainWindow window(profile, adblock);
     window.show();
 
     qint64 windowShownMs = -1;
     if (bench) {
         // El primer ciclo del bucle de eventos tras show() es cuando la ventana ya está en pantalla.
         QTimer::singleShot(0, &window, [&] { windowShownMs = sinceStart.elapsed(); });
-        QObject::connect(window.view(), &QWebEngineView::loadFinished, &app, [&](bool) {
+        QObject::connect(window.currentTab(), &QWebEngineView::loadFinished, &app, [&](bool) {
             std::printf("{\"window_shown_ms\":%lld,\"first_load_ms\":%lld}\n",
                         static_cast<long long>(windowShownMs), static_cast<long long>(sinceStart.elapsed()));
             std::fflush(stdout);
@@ -70,7 +65,7 @@ int main(int argc, char* argv[])
     QObject::connect(filters, &sora::FilterListStore::engineReady, adblock,
                      [adblock](std::shared_ptr<const sora::AdblockEngine> engine) { adblock->setEngine(std::move(engine)); });
     QObject::connect(filters, &sora::FilterListStore::failed, &window,
-                     [&window](const QString& reason) { window.statusBar()->showMessage(reason); });
+                     [&window](const QString& reason) { window.showNotice(reason); });
     filters->start();
 
     return app.exec();

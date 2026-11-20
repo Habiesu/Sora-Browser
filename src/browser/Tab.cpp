@@ -12,7 +12,9 @@ Tab::Tab(QWebEngineProfile* profile, const AdblockService* adblock, QWidget* par
     page->setUrlRequestInterceptor(interceptor);
     setPage(page);
     connect(interceptor, &RequestInterceptor::blocked, this, [this] { countBlocked(); }, Qt::QueuedConnection);
+    connect(this, &QWebEngineView::loadFinished, this, [this] { m_loading = false; });
     connect(this, &QWebEngineView::loadStarted, this, [this] {
+        m_loading = true;
         m_blocked = 0;
         emit blockedCountChanged(0);
     });

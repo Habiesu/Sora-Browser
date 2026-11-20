@@ -17,6 +17,7 @@ public:
     Tab(QWebEngineProfile* profile, const AdblockService* adblock, QWidget* parent = nullptr);
 
     int blockedCount() const { return m_blocked; }
+    bool isLoading() const { return m_loading; }
     void countBlocked();
 
     // Lo pone TabManager: dónde abrir lo que la web pide en otra ventana.
@@ -28,6 +29,7 @@ signals:
 
 private:
     int m_blocked = 0;
+    bool m_loading = false;
 };
 
 } // namespace sora
