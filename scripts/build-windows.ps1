@@ -5,7 +5,7 @@
 .DESCRIPTION
   Requisitos (se comprueban al empezar): Visual Studio 2022 Build Tools con C++, CMake, Ninja,
   Rust (rustup, toolchain MSVC), Python 3, Inno Setup 6 y Git.
-  Qt 6.12.0 (msvc2022_64 + qtwebengine) se descarga con aqtinstall en .\.qt si no existe.
+  Qt 6.12.0 (msvc2022_64 + qtwebengine) se descarga con scripts\fetch-qt.py en .\.qt si no existe.
 #>
 param(
     [string]$QtVersion = "6.12.0",
@@ -41,9 +41,9 @@ if (-not (Test-Path $iscc)) { throw "Falta Inno Setup 6." }
 if (-not $QtDir) { $QtDir = Join-Path $root ".qt\$QtVersion\msvc2022_64" }
 if (-not (Test-Path "$QtDir\bin\Qt6WebEngineCore.dll")) {
     Require python "Instala Python 3."
-    python -m pip install --user --quiet aqtinstall
-    if ($LASTEXITCODE) { throw "No se pudo instalar aqtinstall." }
-    python -m aqt install-qt windows desktop $QtVersion win64_msvc2022_64 -O (Join-Path $root ".qt") -m qtwebengine qtwebchannel qtpositioning
+    python -m pip install --user --quiet py7zr
+    if ($LASTEXITCODE) { throw "No se pudo instalar py7zr." }
+    python (Join-Path $PSScriptRoot "fetch-qt.py") $QtVersion $QtDir
     if ($LASTEXITCODE) { throw "No se pudo descargar Qt $QtVersion." }
 }
 
