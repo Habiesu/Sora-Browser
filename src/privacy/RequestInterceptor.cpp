@@ -58,7 +58,8 @@ bool RequestInterceptor::decide(const QUrl& url, const QUrl& firstParty,
                                 QWebEngineUrlRequestInfo::ResourceType type) const
 {
     // Navegar a una web (aunque esté en una lista) siempre debe funcionar.
-    if (type == QWebEngineUrlRequestInfo::ResourceTypeMainFrame)
+    if (type == QWebEngineUrlRequestInfo::ResourceTypeMainFrame
+        || type == QWebEngineUrlRequestInfo::ResourceTypeNavigationPreloadMainFrame)
         return false;
     const auto engine = m_engine.load();
     if (!engine)

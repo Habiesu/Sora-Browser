@@ -44,6 +44,7 @@ private slots:
         sora::RequestInterceptor interceptor;
         interceptor.setEngine(smallEngine());
         QVERIFY(!interceptor.decide(QUrl("https://ads.example/"), QUrl(), RT::ResourceTypeMainFrame));
+        QVERIFY(!interceptor.decide(QUrl("https://ads.example/"), QUrl(), RT::ResourceTypeNavigationPreloadMainFrame));
     }
     void engineCanBeRemoved()
     {

@@ -1,9 +1,15 @@
-; Instalador de Sora (Inno Setup 6). Instalación por usuario, sin permisos de administrador.
+; Instalador de Sora (Inno Setup 6.3 o posterior). Instalación por usuario, sin permisos de administrador.
 ; Se compila con: ISCC /DAppVersion=0.1.0 /DSourceDir=<carpeta con sora.exe> /DOutputDir=<salida> sora.iss
 ; La autoactualización llega en el Hito 7.
 
 #ifndef AppVersion
   #define AppVersion "0.1.0"
+#endif
+#ifndef SourceDir
+  #define SourceDir "..\dist\Sora"
+#endif
+#ifndef OutputDir
+  #define OutputDir "..\dist"
 #endif
 
 [Setup]

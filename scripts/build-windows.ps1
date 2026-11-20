@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Compila Sora en Windows y genera el instalador en dist\.
 
@@ -42,7 +42,9 @@ if (-not $QtDir) { $QtDir = Join-Path $root ".qt\$QtVersion\msvc2022_64" }
 if (-not (Test-Path "$QtDir\bin\Qt6WebEngineCore.dll")) {
     Require python "Instala Python 3."
     python -m pip install --user --quiet aqtinstall
+    if ($LASTEXITCODE) { throw "No se pudo instalar aqtinstall." }
     python -m aqt install-qt windows desktop $QtVersion win64_msvc2022_64 -O (Join-Path $root ".qt") -m qtwebengine qtwebchannel qtpositioning
+    if ($LASTEXITCODE) { throw "No se pudo descargar Qt $QtVersion." }
 }
 
 # Compilar y probar
@@ -61,8 +63,13 @@ $stage = Join-Path $root "dist\Sora"
 if (Test-Path $stage) { Remove-Item -Recurse -Force $stage }
 New-Item -ItemType Directory -Force -Path $stage | Out-Null
 Copy-Item "build-win\src\sora.exe" $stage
-& "$QtDir\bin\windeployqt.exe" --release --no-translations --no-system-d3d-compiler --no-opengl-sw "$stage\sora.exe"
+& "$QtDir\bin\windeployqt.exe" --release --no-translations --no-system-d3d-compiler --no-opengl-sw --no-compiler-runtime "$stage\sora.exe"
 if ($LASTEXITCODE) { throw "Falló windeployqt." }
+# Runtime de C++ junto a sora.exe: así funciona en PCs sin "Visual C++ Redistributable"
+# y sin pedir permisos de administrador.
+$crt = Get-ChildItem -Directory "$env:VCToolsRedistDir\x64" -Filter "Microsoft.VC*.CRT" | Select-Object -First 1
+if (-not $crt) { throw "No se encuentra el runtime de C++ en $env:VCToolsRedistDir." }
+Copy-Item "$($crt.FullName)\*.dll" $stage
 
 & $iscc /Qp "/DAppVersion=$Version" "/DSourceDir=$stage" "/DOutputDir=$(Join-Path $root 'dist')" "installer\sora.iss"
 if ($LASTEXITCODE) { throw "Falló Inno Setup." }

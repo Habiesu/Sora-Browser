@@ -32,6 +32,15 @@ bool writeAtomically(const QString& path, const QByteArray& data)
     return f.commit();
 }
 
+// Rechaza respuestas que no son listas (p. ej. la página de inicio de sesión de un Wi-Fi público).
+bool looksLikeFilterList(QByteArray body)
+{
+    if (body.startsWith("\xEF\xBB\xBF"))
+        body.remove(0, 3);
+    body = body.trimmed();
+    return body.startsWith("[Adblock") || body.startsWith('!');
+}
+
 QByteArray readAll(const QString& path)
 {
     QFile f(path);
@@ -92,24 +101,34 @@ void FilterListStore::start()
         if (!QFileInfo::exists(m_dir + QStringLiteral("/lists/") + fileNameFor(url)))
             missing << url;
     }
-    if (missing.isEmpty()) {
+    const bool haveSomeLists = missing.size() < m_lists.size();
+
+    // Con las listas que ya hay se prepara el motor enseguida; una descarga lenta no debe retrasarlo.
+    if (haveSomeLists)
         build();
+    if (missing.isEmpty())
         return;
-    }
 
     m_pendingDownloads = int(missing.size());
+    m_downloadedAny = false;
     for (const QUrl& url : missing) {
         QNetworkRequest request(url);
         request.setTransferTimeout(30000);
         QNetworkReply* reply = m_nam->get(request);
-        connect(reply, &QNetworkReply::finished, this, [this, reply, url] {
+        connect(reply, &QNetworkReply::finished, this, [this, reply, url, haveSomeLists] {
             reply->deleteLater();
             const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
             const QByteArray body = reply->readAll();
-            if (reply->error() == QNetworkReply::NoError && status == 200 && !body.isEmpty())
-                writeAtomically(m_dir + QStringLiteral("/lists/") + fileNameFor(url), body);
-            if (--m_pendingDownloads == 0)
-                build();
+            if (reply->error() == QNetworkReply::NoError && status == 200 && looksLikeFilterList(body)
+                && writeAtomically(m_dir + QStringLiteral("/lists/") + fileNameFor(url), body)) {
+                m_downloadedAny = true;
+            }
+            if (--m_pendingDownloads > 0)
+                return;
+            if (m_downloadedAny)
+                build(); // nuevo motor con las listas recién llegadas
+            else if (!haveSomeLists)
+                emit failed(tr("No se pudieron descargar las listas de bloqueo. Se volverá a intentar en el próximo arranque."));
         });
     }
 }

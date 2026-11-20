@@ -11,7 +11,8 @@ namespace sora {
 class AdblockEngine;
 
 // Mantiene en disco las listas de filtros y el motor compilado (engine.bin), y entrega el
-// motor listo sin bloquear nunca el hilo de la interfaz.
+// motor listo sin bloquear nunca el hilo de la interfaz. engineReady puede emitirse más de una
+// vez: primero con las listas en disco y otra vez cuando terminan de llegar las que faltaban.
 //   <dir>/lists/<archivo>.txt   listas descargadas
 //   <dir>/engine.bin            motor serializado
 //   <dir>/engine.version        huella de la versión del formato y del contenido de las listas
@@ -33,6 +34,7 @@ private:
     QList<QUrl> m_lists;
     QNetworkAccessManager* m_nam;
     int m_pendingDownloads = 0;
+    bool m_downloadedAny = false;
 };
 
 } // namespace sora

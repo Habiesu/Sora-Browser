@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Compara el arranque y la memoria de Sora con los de Chrome en este PC.
 

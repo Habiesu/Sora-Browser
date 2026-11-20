@@ -48,6 +48,13 @@ static bool blocksAd(const QList<QVariant>& args)
     return engine && engine->shouldBlock(QUrl("https://ads.example/x.js"), QUrl("https://site.test"), "script");
 }
 
+// Acepta conexiones y nunca responde: simula un servidor que se cuelga.
+class HangingServer : public QTcpServer {
+public:
+    HangingServer() { listen(QHostAddress::LocalHost); }
+    QUrl url(const QString& path) const { return QUrl(QString("http://127.0.0.1:%1/%2").arg(serverPort()).arg(path)); }
+};
+
 class TestFilterListStore : public QObject {
     Q_OBJECT
 private slots:
@@ -106,6 +113,36 @@ private slots:
         QVERIFY(blocksAd(ready.first()));
         QVERIFY(bin.open(QIODevice::ReadOnly));
         QVERIFY(sora::AdblockEngine::deserialize(bin.readAll()).has_value());
+    }
+
+    void hangingListDoesNotDelayCachedLists()
+    {
+        QTemporaryDir dir;
+        QDir().mkpath(dir.path() + "/lists");
+        QFile list(dir.path() + "/lists/easylist.txt");
+        QVERIFY(list.open(QIODevice::WriteOnly));
+        list.write(smallRules());
+        list.close();
+
+        HangingServer hanging;
+        QNetworkAccessManager nam;
+        FilterListStore store(dir.path(), {QUrl("http://127.0.0.1:1/easylist.txt"), hanging.url("other.txt")}, &nam);
+        QSignalSpy ready(&store, &FilterListStore::engineReady);
+        store.start();
+        QVERIFY(ready.wait(3000));
+        QVERIFY(blocksAd(ready.first()));
+    }
+
+    void htmlPageIsNotSavedAsList()
+    {
+        QTemporaryDir dir;
+        TinyHttpServer portal("<html><body>Inicia sesión en el Wi-Fi del hotel</body></html>");
+        QNetworkAccessManager nam;
+        FilterListStore store(dir.path(), {portal.url("easylist.txt")}, &nam);
+        QSignalSpy failed(&store, &FilterListStore::failed);
+        store.start();
+        QVERIFY(failed.wait(10000));
+        QVERIFY(!QFile::exists(dir.path() + "/lists/easylist.txt"));
     }
 
     void noNetworkFirstRunFails()
