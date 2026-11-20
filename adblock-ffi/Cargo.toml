@@ -1,0 +1,16 @@
+[package]
+name = "sora_adblock"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+# Sin "single-thread": así Engine es Send + Sync y el interceptor puede consultarlo desde cualquier hilo.
+adblock = { version = "0.13", default-features = false, features = ["embedded-domain-resolver", "full-regex-handling"] }
+
+[profile.release]
+lto = true
+codegen-units = 1
