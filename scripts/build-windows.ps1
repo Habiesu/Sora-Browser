@@ -62,7 +62,8 @@ if (-not $SkipTests) {
 $stage = Join-Path $root "dist\Sora"
 if (Test-Path $stage) { Remove-Item -Recurse -Force $stage }
 New-Item -ItemType Directory -Force -Path $stage | Out-Null
-Copy-Item "build-win\src\sora.exe" $stage
+# qt_standard_project_setup() deja los .exe en la raíz del build en Windows
+Copy-Item "build-win\sora.exe" $stage
 & "$QtDir\bin\windeployqt.exe" --release --no-translations --no-system-d3d-compiler --no-opengl-sw --no-compiler-runtime "$stage\sora.exe"
 if ($LASTEXITCODE) { throw "Falló windeployqt." }
 # Runtime de C++ junto a sora.exe: así funciona en PCs sin "Visual C++ Redistributable"
