@@ -5,6 +5,8 @@ add_library(sora_core STATIC
   ui/Theme.h ui/Theme.cpp
   ui/Icons.h ui/Icons.cpp
   ui/TabStrip.h ui/TabStrip.cpp
+  ui/WindowFrame.h ui/WindowFrame.cpp
+  ui/TitleBar.h ui/TitleBar.cpp
   privacy/AdblockEngine.h privacy/AdblockEngine.cpp
   privacy/AdblockService.h privacy/AdblockService.cpp
   privacy/RequestInterceptor.h privacy/RequestInterceptor.cpp
@@ -12,6 +14,9 @@ add_library(sora_core STATIC
 )
 target_include_directories(sora_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(sora_core PUBLIC Qt6::Widgets Qt6::Network Qt6::WebEngineWidgets Qt6::Concurrent sora_adblock)
+if(WIN32)
+  target_link_libraries(sora_core PUBLIC dwmapi user32)
+endif()
 
 qt_add_executable(sora WIN32 app/main.cpp)
 target_link_libraries(sora PRIVATE sora_core)
