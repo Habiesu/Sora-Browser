@@ -7,3 +7,4 @@ function(sora_add_test name)
 endfunction()
 
 sora_add_test(tst_mainwindow)
+sora_add_test(tst_adblockengine)

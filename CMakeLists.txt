@@ -11,6 +11,15 @@ endif()
 find_package(Qt6 6.12 REQUIRED COMPONENTS Core Gui Widgets Network WebEngineCore WebEngineWidgets Concurrent Test)
 qt_standard_project_setup()
 
+include(FetchContent)
+FetchContent_Declare(Corrosion
+  GIT_REPOSITORY https://github.com/corrosion-rs/corrosion.git
+  GIT_TAG v0.5.2
+  GIT_SHALLOW TRUE)
+FetchContent_MakeAvailable(Corrosion)
+corrosion_import_crate(MANIFEST_PATH adblock-ffi/Cargo.toml CRATE_TYPES staticlib PROFILE release)
+target_include_directories(sora_adblock INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/adblock-ffi/include)
+
 enable_testing()
 add_subdirectory(src)
 add_subdirectory(tests)

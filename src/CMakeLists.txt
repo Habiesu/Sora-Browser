@@ -1,8 +1,9 @@
 add_library(sora_core STATIC
   app/MainWindow.h app/MainWindow.cpp
+  privacy/AdblockEngine.h privacy/AdblockEngine.cpp
 )
 target_include_directories(sora_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(sora_core PUBLIC Qt6::Widgets Qt6::Network Qt6::WebEngineWidgets Qt6::Concurrent)
+target_link_libraries(sora_core PUBLIC Qt6::Widgets Qt6::Network Qt6::WebEngineWidgets Qt6::Concurrent sora_adblock)
 
 qt_add_executable(sora WIN32 app/main.cpp)
 target_link_libraries(sora PRIVATE sora_core)

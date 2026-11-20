@@ -1,0 +1,3 @@
+||ads.example^
+@@||ads.example/ok^
+||tracker.test^$third-party
