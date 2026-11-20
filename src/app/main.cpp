@@ -2,6 +2,7 @@
 #include <QWebEngineProfile>
 
 #include "app/MainWindow.h"
+#include "privacy/RequestInterceptor.h"
 
 int main(int argc, char* argv[])
 {
@@ -11,7 +12,12 @@ int main(int argc, char* argv[])
 
     auto* profile = new QWebEngineProfile(QStringLiteral("default"), &app);
 
+    auto* interceptor = new sora::RequestInterceptor(&app);
+    profile->setUrlRequestInterceptor(interceptor);
+
     sora::MainWindow window(profile);
+    QObject::connect(interceptor, &sora::RequestInterceptor::blocked, &window,
+                     [&window] { window.countBlocked(); }, Qt::QueuedConnection);
     window.show();
 
     const QStringList args = QApplication::arguments();

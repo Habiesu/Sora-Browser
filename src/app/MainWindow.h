@@ -18,10 +18,14 @@ public:
     explicit MainWindow(QWebEngineProfile* profile, QWidget* parent = nullptr);
     void navigate(const QString& input);
     QWebEngineView* view() const { return m_view; }
+    // Suma un elemento bloqueado al contador de la página actual.
+    void countBlocked();
 
 private:
     QLineEdit* m_address = nullptr;
     QWebEngineView* m_view = nullptr;
+    int m_blocked = 0;
+    void showBlocked();
 };
 
 } // namespace sora

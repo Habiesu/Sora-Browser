@@ -2,6 +2,7 @@
 
 #include <QLineEdit>
 #include <QRegularExpression>
+#include <QStatusBar>
 #include <QToolBar>
 #include <QUrlQuery>
 #include <QWebEngineProfile>
@@ -54,8 +55,23 @@ MainWindow::MainWindow(QWebEngineProfile* profile, QWidget* parent)
     connect(m_view, &QWebEngineView::titleChanged, this,
             [this](const QString& title) { setWindowTitle(title.isEmpty() ? QStringLiteral("Sora") : title + QStringLiteral(" — Sora")); });
 
+    // El contador se reinicia al empezar a cargar una página nueva.
+    connect(m_view, &QWebEngineView::loadStarted, this, [this] { m_blocked = 0; showBlocked(); });
+    showBlocked();
+
     setWindowTitle(QStringLiteral("Sora"));
     resize(1280, 800);
+}
+
+void MainWindow::countBlocked()
+{
+    ++m_blocked;
+    showBlocked();
+}
+
+void MainWindow::showBlocked()
+{
+    statusBar()->showMessage(tr("Bloqueados: %1").arg(m_blocked));
 }
 
 void MainWindow::navigate(const QString& input)
