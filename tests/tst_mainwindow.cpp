@@ -60,6 +60,28 @@ private slots:
         w->tabs()->setCurrentIndex(1);
         QCOMPARE(box->text(), QString("b.test"));
     }
+    void blankPageShowsNewTabTitle()
+    {
+        auto w = openWindow();
+        QSignalSpy loaded(w->currentTab(), &sora::Tab::loadFinished);
+        w->navigate("about:blank");
+        QTRY_COMPARE(loaded.count(), 1);
+        QTest::qWait(50); // titleChanged llega después de loadFinished
+        QCOMPARE(w->findChild<sora::TabStrip*>()->tabText(0), QString::fromUtf8("Nueva pestaña"));
+        QCOMPARE(w->windowTitle(), QString("Sora"));
+    }
+    void closingCurrentTabFocusesTheNext()
+    {
+        auto w = openWindow();
+        w->tabs()->newTab();
+        w->tabs()->newTab();
+        w->tabs()->setCurrentIndex(1);
+        w->tabs()->closeTab(1);
+        sora::Tab* now = w->currentTab();
+        QWidget* focus = QApplication::focusWidget();
+        QVERIFY(focus);
+        QVERIFY(focus == now || now->isAncestorOf(focus) || focus == now->focusProxy());
+    }
     void ctrlTOpensTab()
     {
         auto w = openWindow();

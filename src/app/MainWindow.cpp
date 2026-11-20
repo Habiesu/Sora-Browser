@@ -58,6 +58,16 @@ QUrl urlFromInput(const QString& rawInput)
 namespace {
 constexpr int kLinuxResizeMargin = 4; // sin marco nativo: franja para redimensionar
 const QString kNewTabTitle = QObject::tr("Nueva pestaña");
+
+// Una página sin título (o about:blank) no tiene nada que mostrar: cadena vacía.
+QString pageTitle(const QString& title)
+{
+    return title == QLatin1String("about:blank") ? QString() : title;
+}
+QString windowTitleFor(const QString& title)
+{
+    return pageTitle(title).isEmpty() ? QStringLiteral("Sora") : title + QStringLiteral(" — Sora");
+}
 } // namespace
 
 MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock, QWidget* parent)
@@ -117,10 +127,11 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
         showCurrentTab();
     });
     connect(m_tabs, &TabManager::tabTitleChanged, this, [this, strip](int index, const QString& title) {
-        strip->setTabText(index, title.isEmpty() ? kNewTabTitle : title);
-        strip->setTabToolTip(index, title);
+        const QString shown = pageTitle(title);
+        strip->setTabText(index, shown.isEmpty() ? kNewTabTitle : shown);
+        strip->setTabToolTip(index, shown);
         if (index == m_tabs->currentIndex())
-            setWindowTitle(title.isEmpty() ? QStringLiteral("Sora") : title + QStringLiteral(" — Sora"));
+            setWindowTitle(windowTitleFor(title));
     });
     connect(m_tabs, &TabManager::tabIconChanged, strip, &QTabBar::setTabIcon);
     connect(m_tabs, &TabManager::lastTabClosed, this, &QWidget::close);
@@ -243,9 +254,7 @@ void MainWindow::showCurrentTab()
     m_toolbar->omnibox()->setUrl(tab->url());
     m_toolbar->setBlockedCount(tab->blockedCount());
     m_linkPreview->hide();
-    const QString title = tab->title();
-    setWindowTitle(title.isEmpty() || title == QLatin1String("about:blank")
-                       ? QStringLiteral("Sora") : title + QStringLiteral(" — Sora"));
+    setWindowTitle(windowTitleFor(tab->title()));
     refreshNavigation();
 }
 
