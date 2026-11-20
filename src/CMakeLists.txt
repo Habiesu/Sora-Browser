@@ -4,6 +4,7 @@ add_library(sora_core STATIC
   browser/TabManager.h browser/TabManager.cpp
   ui/Theme.h ui/Theme.cpp
   ui/Icons.h ui/Icons.cpp
+  ui/TabStrip.h ui/TabStrip.cpp
   privacy/AdblockEngine.h privacy/AdblockEngine.cpp
   privacy/AdblockService.h privacy/AdblockService.cpp
   privacy/RequestInterceptor.h privacy/RequestInterceptor.cpp
