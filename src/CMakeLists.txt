@@ -7,6 +7,9 @@ add_library(sora_core STATIC
   ui/TabStrip.h ui/TabStrip.cpp
   ui/WindowFrame.h ui/WindowFrame.cpp
   ui/TitleBar.h ui/TitleBar.cpp
+  ui/Omnibox.h ui/Omnibox.cpp
+  ui/Toolbar.h ui/Toolbar.cpp
+  ui/BookmarksBar.h ui/BookmarksBar.cpp
   privacy/AdblockEngine.h privacy/AdblockEngine.cpp
   privacy/AdblockService.h privacy/AdblockService.cpp
   privacy/RequestInterceptor.h privacy/RequestInterceptor.cpp
