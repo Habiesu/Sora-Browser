@@ -65,5 +65,88 @@ private slots:
     }
 };
 
-QTEST_MAIN(TestWindowFrame)
+#ifdef Q_OS_WIN
+#include <QToolTip>
+#include <QWebEngineProfile>
+#include <qt_windows.h>
+#include "app/MainWindow.h"
+#include "privacy/AdblockService.h"
+
+// Envía a la ventana los mensajes no cliente que manda Windows sobre el botón maximizar.
+class ProbeWindow : public sora::MainWindow {
+public:
+    using MainWindow::MainWindow;
+    void send(UINT message, WPARAM wParam)
+    {
+        MSG msg{};
+        msg.message = message;
+        msg.wParam = wParam;
+        qintptr result = 0;
+        nativeEvent("windows_generic_MSG", &msg, &result);
+    }
+};
+
+class TestMaximizeButton : public QObject {
+    Q_OBJECT
+    QWebEngineProfile* m_profile = nullptr;
+    sora::AdblockService m_adblock;
+private slots:
+    void initTestCase() { m_profile = new QWebEngineProfile(this); }
+    void releaseAloneDoesNothing()
+    {
+        ProbeWindow w(m_profile, &m_adblock);
+        w.show();
+        w.send(WM_NCLBUTTONUP, HTMAXBUTTON); // pulsado fuera y soltado encima
+        QVERIFY(!w.isMaximized());
+    }
+    void pressAndReleaseMaximizes()
+    {
+        ProbeWindow w(m_profile, &m_adblock);
+        w.show();
+        auto* button = w.findChild<sora::TitleBar*>()->maximizeButton();
+        w.send(WM_NCLBUTTONDOWN, HTMAXBUTTON);
+        QVERIFY(button->isDown());
+        w.send(WM_NCLBUTTONUP, HTMAXBUTTON);
+        QVERIFY(!button->isDown());
+        QTRY_VERIFY(w.isMaximized());
+    }
+    void leavingCancelsThePress()
+    {
+        ProbeWindow w(m_profile, &m_adblock);
+        w.show();
+        w.send(WM_NCLBUTTONDOWN, HTMAXBUTTON);
+        w.send(WM_NCMOUSELEAVE, 0);
+        QVERIFY(!w.findChild<sora::TitleBar*>()->maximizeButton()->isDown());
+        w.send(WM_NCLBUTTONUP, HTMAXBUTTON);
+        QVERIFY(!w.isMaximized());
+    }
+    void hoverShowsTooltip()
+    {
+        ProbeWindow w(m_profile, &m_adblock);
+        w.show();
+        w.send(WM_NCMOUSEMOVE, HTMAXBUTTON);
+        QTRY_VERIFY(QToolTip::isVisible());
+        QCOMPARE(QToolTip::text(), QString("Maximizar"));
+        w.send(WM_NCMOUSELEAVE, 0);
+        QTRY_VERIFY(!QToolTip::isVisible());
+    }
+};
+#endif
+
+int main(int argc, char** argv)
+{
+    QApplication app(argc, argv);
+    int status = 0;
+    {
+        TestWindowFrame t;
+        status |= QTest::qExec(&t, argc, argv);
+    }
+#ifdef Q_OS_WIN
+    {
+        TestMaximizeButton t;
+        status |= QTest::qExec(&t, argc, argv);
+    }
+#endif
+    return status;
+}
 #include "tst_windowframe.moc"

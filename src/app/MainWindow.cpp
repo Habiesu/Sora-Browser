@@ -8,6 +8,8 @@
 #include <QStackedWidget>
 #include <QStyleHints>
 #include <QTimer>
+#include <QToolButton>
+#include <QToolTip>
 #include <QUrlQuery>
 #include <QVBoxLayout>
 #include <QWebEngineHistory>
@@ -358,6 +360,15 @@ void MainWindow::mousePressEvent(QMouseEvent* event)
     QMainWindow::mousePressEvent(event);
 }
 
+void MainWindow::leaveMaximizeButton()
+{
+    if (m_titleBar->maximizeButton()->property("hovered").toBool())
+        QToolTip::hideText();
+    m_titleBar->setMaximizeHovered(false);
+    m_maximizePressed = false;
+    m_titleBar->maximizeButton()->setDown(false);
+}
+
 bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr* result)
 {
 #ifdef Q_OS_WIN
@@ -398,29 +409,40 @@ bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr
         }
         return true;
     }
+    // Maximizar es zona no cliente (HTMAXBUTTON, para Snap Layouts): Qt no le manda eventos de
+    // ratón, así que el estado pasado, pulsado y el tooltip se llevan aquí.
     case WM_NCMOUSEMOVE:
         if (msg->wParam == HTMAXBUTTON) {
+            QToolButton* max = m_titleBar->maximizeButton();
+            if (!max->property("hovered").toBool())
+                QToolTip::showText(QCursor::pos(), max->toolTip(), max);
             m_titleBar->setMaximizeHovered(true);
             TRACKMOUSEEVENT track{sizeof(track), TME_LEAVE | TME_NONCLIENT, msg->hwnd, 0};
             TrackMouseEvent(&track);
         } else {
-            m_titleBar->setMaximizeHovered(false);
+            leaveMaximizeButton();
         }
         return false;
     case WM_NCMOUSELEAVE:
     case WM_MOUSEMOVE:
-        m_titleBar->setMaximizeHovered(false);
+        leaveMaximizeButton();
         return false;
     case WM_NCLBUTTONDOWN:
     case WM_NCLBUTTONDBLCLK:
         if (msg->wParam == HTMAXBUTTON) {
+            m_maximizePressed = true;
+            m_titleBar->maximizeButton()->setDown(true);
             *result = 0;
             return true; // el clic se completa al soltar
         }
         return false;
     case WM_NCLBUTTONUP:
         if (msg->wParam == HTMAXBUTTON) {
-            toggleMaximized();
+            const bool click = m_maximizePressed; // pulsar fuera y soltar encima no cuenta
+            m_maximizePressed = false;
+            m_titleBar->maximizeButton()->setDown(false);
+            if (click)
+                toggleMaximized();
             *result = 0;
             return true;
         }

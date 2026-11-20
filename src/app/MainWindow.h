@@ -50,12 +50,14 @@ private:
     QLabel* m_linkPreview;
     QShortcut* m_stop = nullptr; // Esc: solo mientras carga la pestaña visible y el foco está en la web
     bool m_syncing = false; // cambios hechos por código en la tira: no reenviarlos
+    bool m_maximizePressed = false; // botón maximizar (no cliente) pulsado y aún no soltado
 
     void watchTab(Tab* tab);
     void showCurrentTab();
     void refreshNavigation();
     void selectTab(int index);
     void toggleMaximized();
+    void leaveMaximizeButton();
     void placeLinkPreview();
     void addShortcuts();
 };
