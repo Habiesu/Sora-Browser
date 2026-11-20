@@ -69,7 +69,7 @@ bench/README.md
 
 ---
 
-### Tarea 1: Esqueleto CMake y ventana que navega
+### Task 1: Esqueleto CMake y ventana que navega
 
 **Files:**
 - Create: `CMakeLists.txt`, `src/CMakeLists.txt`, `src/app/main.cpp`, `src/app/MainWindow.h`,
@@ -99,7 +99,7 @@ bench/README.md
 - [ ] **Step 4:** `ctest --test-dir build --output-on-failure` → PASS.
 - [ ] **Step 5:** Commit `feat: esqueleto CMake y ventana mínima que navega`.
 
-### Tarea 2: Crate `adblock-ffi`
+### Task 2: Crate `adblock-ffi`
 
 **Files:**
 - Create: `adblock-ffi/Cargo.toml`, `adblock-ffi/src/lib.rs`, `adblock-ffi/include/sora_adblock.h`
@@ -133,7 +133,7 @@ ping media websocket other`. Bloquea si `matched && !exception` (o `important`).
 - [ ] **Step 4:** `cargo test` → PASS.
 - [ ] **Step 5:** Commit `feat: crate adblock-ffi sobre el motor de Brave`.
 
-### Tarea 3: Integración con CMake y envoltorio `AdblockEngine`
+### Task 3: Integración con CMake y envoltorio `AdblockEngine`
 
 **Files:**
 - Modify: `CMakeLists.txt` (Corrosion vía `FetchContent`, tag `v0.5.2`; `corrosion_import_crate`)
@@ -165,7 +165,7 @@ ping media websocket other`. Bloquea si `matched && !exception` (o `important`).
 - [ ] **Step 4:** `ctest` → PASS.
 - [ ] **Step 5:** Commit `feat: AdblockEngine en C++ enlazado con Corrosion`.
 
-### Tarea 4: `RequestInterceptor` conectado al perfil
+### Task 4: `RequestInterceptor` conectado al perfil
 
 **Files:**
 - Create: `src/privacy/RequestInterceptor.h/.cpp`, `tests/tst_requestinterceptor.cpp`
@@ -199,7 +199,7 @@ ping media websocket other`. Bloquea si `matched && !exception` (o `important`).
 - [ ] **Step 4:** `ctest` → PASS.
 - [ ] **Step 5:** Commit `feat: interceptor de peticiones con el bloqueador`.
 
-### Tarea 5: `FilterListStore` — listas y caché del motor sin bloquear el arranque
+### Task 5: `FilterListStore` — listas y caché del motor sin bloquear el arranque
 
 **Files:**
 - Create: `src/privacy/FilterListStore.h/.cpp`, `tests/tst_filterliststore.cpp`
@@ -233,7 +233,7 @@ ping media websocket other`. Bloquea si `matched && !exception` (o `important`).
 - [ ] **Step 4:** `ctest` → PASS.
 - [ ] **Step 5:** Commit `feat: listas de filtros y caché del motor en segundo plano`.
 
-### Tarea 6: Medición de arranque y memoria
+### Task 6: Medición de arranque y memoria
 
 **Files:**
 - Modify: `src/app/main.cpp` (opción `--bench`)
@@ -254,7 +254,7 @@ ping media websocket other`. Bloquea si `matched && !exception` (o `important`).
   (si `pwsh` no está en el contenedor, se valida en el job de Windows de la Tarea 7).
 - [ ] **Step 4:** Commit `feat: modo --bench y script de comparación con Chrome`.
 
-### Tarea 7: CI en Linux y Windows con artefacto descargable
+### Task 7: CI en Linux y Windows con artefacto descargable
 
 **Files:**
 - Create: `.github/workflows/ci.yml`
@@ -268,7 +268,7 @@ ping media websocket other`. Bloquea si `matched && !exception` (o `important`).
 - [ ] **Step 3:** Empujar la rama y comprobar que ambos jobs terminan en verde.
 - [ ] **Step 4:** Commit `ci: compilación y pruebas en Linux y Windows`.
 
-### Tarea 8: Medición en el PC del usuario (con su permiso)
+### Task 8: Medición en el PC del usuario (con su permiso)
 
 - [ ] **Step 1:** Conectar al PC del usuario (Remote Control) cuando lo autorice.
 - [ ] **Step 2:** Descargar el artefacto `sora-windows-x64` del último CI verde y ejecutar
