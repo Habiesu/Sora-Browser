@@ -83,6 +83,32 @@ private slots:
             QCOMPARE(QColor(img.pixel(corner * img.devicePixelRatio())).name(), tab.name());
         }
     }
+    void plusDoesNotCoverTabsOrArrows_data()
+    {
+        QTest::addColumn<bool>("styled");
+        QTest::newRow("sin hoja de estilos") << false;
+        QTest::newRow("con la hoja Niebla") << true;
+    }
+    void plusDoesNotCoverTabsOrArrows()
+    {
+        QFETCH(bool, styled);
+        QWidget host;
+        if (styled)
+            host.setStyleSheet(sora::nieblaStyleSheet(sora::nieblaPalette(Qt::ColorScheme::Light)));
+        TabStrip bar(&host);
+        host.resize(1200, 40);
+        bar.resize(1200, 40);
+        host.show();
+        for (int i = 0; i < 30; ++i)
+            bar.addTab("x");
+        bar.setCurrentIndex(29); // desplaza hasta el final, como al abrir una pestaña nueva
+        const QRect plus = plusOf(bar)->geometry();
+        for (int i = 0; i < bar.count(); ++i)
+            QVERIFY2(!bar.tabRect(i).intersects(plus), qPrintable(QString("tapa la pestaña %1").arg(i)));
+        for (auto* b : bar.findChildren<QToolButton*>(Qt::FindDirectChildrenOnly))
+            if (b->isVisible() && b != plusOf(bar) && b->objectName() != "TabCloseButton")
+                QVERIFY2(!b->geometry().intersects(plus), "tapa una flecha");
+    }
     void plusStaysVisible()
     {
         TabStrip bar;

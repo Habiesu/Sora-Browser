@@ -1,6 +1,7 @@
 #include "ui/TabStrip.h"
 
 #include <QMouseEvent>
+#include <QProxyStyle>
 #include <QToolButton>
 
 #include "ui/Icons.h"
@@ -11,7 +12,21 @@ constexpr int kMinTab = 60;
 constexpr int kMaxTab = 220;
 constexpr int kPlusSize = 28;
 constexpr int kPlusGap = 6;
-}
+constexpr int kPlusReserve = kPlusSize + 2 * kPlusGap;
+
+// Con más pestañas de las que caben, QTabBar pone las flechas al final y las pestañas hasta ellas.
+// Se corren a la izquierda para dejarle al "+" su hueco sin tapar ninguna pestaña.
+class TabStripStyle : public QProxyStyle {
+public:
+    QRect subElementRect(SubElement element, const QStyleOption* option, const QWidget* widget) const override
+    {
+        QRect r = QProxyStyle::subElementRect(element, option, widget);
+        if (element == SE_TabBarScrollLeftButton || element == SE_TabBarScrollRightButton)
+            r.translate(-kPlusReserve, 0);
+        return r;
+    }
+};
+} // namespace
 
 TabStrip::TabStrip(QWidget* parent)
     : QTabBar(parent)
@@ -26,6 +41,9 @@ TabStrip::TabStrip(QWidget* parent)
     setUsesScrollButtons(true);
     setFocusPolicy(Qt::NoFocus);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    auto* tabStyle = new TabStripStyle;
+    tabStyle->setParent(this);
+    setStyle(tabStyle);
 
     m_plus->setObjectName(QStringLiteral("NewTabButton"));
     m_plus->setToolTip(tr("Nueva pestaña (Ctrl+T)"));
@@ -105,14 +123,9 @@ void TabStrip::mouseReleaseEvent(QMouseEvent* event)
 
 void TabStrip::placePlus()
 {
+    // Justo tras la última pestaña; si no caben todas, en el hueco reservado tras las flechas.
     int x = count() ? tabRect(count() - 1).right() + 1 + kPlusGap : kPlusGap;
-    int limit = width() - kPlusSize - kPlusGap;
-    // shortcut: con más pestañas de las que caben, el "+" se pone a la izquierda de las flechas de
-    // desplazamiento y tapa en parte la última pestaña visible; si molesta, reservar su hueco.
-    for (auto* b : findChildren<QToolButton*>(Qt::FindDirectChildrenOnly))
-        if (b != m_plus && b->objectName() != QLatin1String("TabCloseButton") && b->isVisible())
-            limit = std::min(limit, b->x() - kPlusSize - kPlusGap);
-    x = std::clamp(x, 0, std::max(0, limit));
+    x = std::clamp(x, 0, std::max(0, width() - kPlusSize - kPlusGap));
     m_plus->move(x, (height() - kPlusSize) / 2 + 3);
     m_plus->raise();
 }

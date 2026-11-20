@@ -5,37 +5,27 @@ Lista viva de cosas vistas al trabajar en Sora que no son urgentes. Al hacer una
 ## Rendimiento
 
 - **Chrome carga la página antes que Sora** (medido con `bench.ps1` el 20/11/2026: ~800 ms frente
-  a ~1000 ms desde el lanzamiento; el arranque y la memoria sí favorecen a Sora). Sospechosos, por
+  a ~720 ms desde el lanzamiento; el arranque y la memoria sí favorecen a Sora). Sospechosos, por
   orden: el `FilterListStore` leyendo y compilando las listas de bloqueo a la vez que carga la
-  primera página (compite por CPU), el `RequestInterceptor` en cada petición y el perfil de Sora
-  con caché frente al de Chrome. Para saberlo: medir con las listas desactivadas y con el
-  interceptor vacío.
-
+  primera página (compite por CPU), el interceptor en cada petición y el perfil de Sora con caché
+  frente al de Chrome. Para saberlo: medir con las listas desactivadas y con el interceptor vacío.
 - **El arranque subió ~40 ms con la interfaz Niebla** (Hito 1: 209 ms; Hito 2: 251 ms; Chrome
   247 → 267 ms el mismo día). Sigue por debajo de Chrome. Candidatos: aplicar la hoja de estilos
   de toda la ventana antes de `show()` y crear los iconos al arrancar. Medir con `sora --bench`.
-- **Esc no para la carga** (en Chrome sí): un atajo global le quitaría Esc a la barra de
-  direcciones. Hacerlo en la vista web (tecla en la página) o solo cuando la dirección no tiene
-  el foco.
-- **Con más pestañas de las que caben**, el "+" se coloca junto a las flechas de desplazamiento y
-  tapa en parte la última pestaña visible.
 
-- **Revisión final del Hito 2 (menores):**
-  - Arrastrar la pestaña actual la oculta y la vuelve a mostrar en cada paso (`TabManager::moveTab`
-    reordena el `QStackedWidget`): la web recibe `visibilitychange` y un vídeo puede pausarse.
-    Guardar el orden en una lista propia y no tocar el stack.
-  - Al arrancar sin URL, la pestaña puede mostrar "about:blank" como título (el filtro solo está
-    en `showCurrentTab`, falta en `tabTitleChanged`).
-  - Botón maximizar (zona no cliente por Snap Layouts): se activa también si se pulsa fuera y se
-    suelta encima, no se ve pulsado y su tooltip no sale. Recordar el `WM_NCLBUTTONDOWN`.
-  - Al cerrar la pestaña actual, el foco no pasa a la nueva pestaña visible.
-  - Los bloqueos se reparten por sitio (el perfil no sabe de qué pestaña viene cada petición):
-    con el mismo sitio en dos pestañas de fondo, se los lleva la primera.
+## Limitaciones conocidas
+
+- **Los bloqueos se reparten por sitio** (el perfil no sabe de qué pestaña viene cada petición):
+  con el mismo sitio en dos pestañas de fondo, se los lleva la primera.
+- **Instaladores 0.1.0 antiguos** no comprueban la versión: si se ejecuta uno de esos, aún puede
+  instalarse encima de una más nueva. Los de 0.2.0 en adelante, no.
 
 ## Sin probar
 
 - **Linux:** la ventana sin marco (franja de 4 px para redimensionar, `startSystemMove`) no se ha
   compilado ni probado; solo hay Windows en este PC.
+- **A mano en Windows:** el panel de Snap Layouts al pasar sobre maximizar, arrastrar, doble clic
+  en la barra y redimensionar con el ratón.
 
 ## Compilación en Windows
 
