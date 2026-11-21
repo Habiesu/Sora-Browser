@@ -26,6 +26,14 @@ TabManager::TabManager(QWebEngineProfile* profile, const AdblockService* adblock
 Tab* TabManager::newTab(const QUrl& url, int index, bool activate)
 {
     auto* tab = new Tab(m_profile);
+    adoptTab(tab, index, activate);
+    if (url.isValid())
+        tab->setUrl(url);
+    return tab;
+}
+
+void TabManager::adoptTab(Tab* tab, int index, bool activate)
+{
     tab->onCreateWindow = [this, tab](QWebEnginePage::WebWindowType type) {
         return newTab({}, indexOf(tab) + 1, type != QWebEnginePage::WebBrowserBackgroundTab);
     };
@@ -47,30 +55,45 @@ Tab* TabManager::newTab(const QUrl& url, int index, bool activate)
         if (count() == 1)
             emit currentChanged(0);
     }
-    if (url.isValid())
-        tab->setUrl(url);
-    return tab;
 }
 
 void TabManager::closeTab(int index)
 {
+    if (Tab* t = removeTab(index, false))
+        t->deleteLater();
+}
+
+Tab* TabManager::takeTab(int index)
+{
+    return removeTab(index, true);
+}
+
+Tab* TabManager::removeTab(int index, bool keep)
+{
     Tab* t = tab(index);
     if (!t)
-        return;
+        return nullptr;
     const bool wasCurrent = index == currentIndex();
     m_quiet = true;
     m_order.removeAt(index);
     m_stack->removeWidget(t);
-    t->deleteLater();
+    if (keep) {
+        // Se va a otra ventana: sin conexiones con esta y fuera del stack antes de avisar (si era la
+        // última, la ventana se cierra y no debe llevársela por delante).
+        t->disconnect(this);
+        t->page()->disconnect(this);
+        t->onCreateWindow = nullptr;
+        t->setParent(nullptr);
+    }
     if (count() && wasCurrent)
         m_stack->setCurrentWidget(m_order[std::min(index, count() - 1)]);
     m_quiet = false;
     emit tabRemoved(index);
-    if (count() == 0) {
+    if (count() == 0)
         emit lastTabClosed();
-        return;
-    }
-    emit currentChanged(currentIndex());
+    else
+        emit currentChanged(currentIndex());
+    return t;
 }
 
 void TabManager::moveTab(int from, int to)

@@ -18,6 +18,8 @@ public:
 
 signals:
     void newTabRequested();
+    // Pestaña arrastrada y soltada fuera de la tira (posición global del ratón).
+    void tabDetachRequested(int index, QPoint globalPos);
 
 protected:
     QSize tabSizeHint(int index) const override;
@@ -25,10 +27,12 @@ protected:
     void tabInserted(int index) override;
     void tabLayoutChange() override;
     void resizeEvent(QResizeEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
 
 private:
+    bool m_dragging = false;
     QToolButton* m_plus;
     QColor m_closeColor;
     QColor m_lineColor;

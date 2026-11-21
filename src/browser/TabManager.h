@@ -23,6 +23,10 @@ public:
     // index −1 = al final. La primera pestaña siempre queda activa.
     Tab* newTab(const QUrl& url = {}, int index = -1, bool activate = true);
     void closeTab(int index);
+    // Para llevarla a otra ventana: la quita sin destruirla (sin conexiones con este gestor).
+    Tab* takeTab(int index);
+    // Añade una pestaña ya creada (de otra ventana); misma página, no se recarga.
+    void adoptTab(Tab* tab, int index = -1, bool activate = true);
     void moveTab(int from, int to);
     void setCurrentIndex(int index);
 
@@ -44,6 +48,7 @@ signals:
     void lastTabClosed();
 
 private:
+    Tab* removeTab(int index, bool keep);
     QWebEngineProfile* m_profile;
     const AdblockService* m_adblock;
     QStackedWidget* m_stack;

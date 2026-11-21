@@ -15,6 +15,7 @@ constexpr int kPlusSize = 28;
 constexpr int kPlusGap = 6;
 constexpr int kPlusReserve = kPlusSize + 2 * kPlusGap;
 constexpr int kTabTopMargin = 6; // margin-top de QTabBar::tab en nieblaStyleSheet
+constexpr int kDetachDistance = 30; // px fuera de la tira para sacar la pestaña
 
 // Con más pestañas de las que caben, QTabBar pone las flechas al final y las pestañas hasta ellas.
 // Se corren a la izquierda para dejarle al "+" su hueco sin tapar ninguna pestaña.
@@ -145,8 +146,25 @@ void TabStrip::resizeEvent(QResizeEvent* event)
     placePlus();
 }
 
+void TabStrip::mousePressEvent(QMouseEvent* event)
+{
+    m_dragging = event->button() == Qt::LeftButton && tabAt(event->position().toPoint()) >= 0;
+    QTabBar::mousePressEvent(event);
+}
+
 void TabStrip::mouseReleaseEvent(QMouseEvent* event)
 {
+    if (event->button() == Qt::LeftButton && m_dragging) {
+        m_dragging = false;
+        // Soltada lejos de la tira (como en Chrome): a otra ventana o a una nueva. La arrastrada
+        // es la actual (pulsar una pestaña la selecciona).
+        const QPoint pos = event->position().toPoint();
+        if (!rect().adjusted(0, -kDetachDistance, 0, kDetachDistance).contains(pos)) {
+            QTabBar::mouseReleaseEvent(event);
+            emit tabDetachRequested(currentIndex(), mapToGlobal(pos));
+            return;
+        }
+    }
     if (event->button() == Qt::MiddleButton) {
         const int index = tabAt(event->position().toPoint());
         if (index >= 0) {

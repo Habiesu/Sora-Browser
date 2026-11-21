@@ -13,6 +13,7 @@
 #include <QUrlQuery>
 #include <QVBoxLayout>
 #include <QWebEngineHistory>
+#include <QWebEngineProfile>
 #include <QWindow>
 
 #include "browser/Tab.h"
@@ -72,7 +73,7 @@ QString windowTitleFor(const QString& title)
 }
 } // namespace
 
-MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock, QWidget* parent)
+MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock, bool startWithTab, QWidget* parent)
     : QMainWindow(parent)
     , m_titleBar(new TitleBar(this))
     , m_toolbar(new Toolbar(this))
@@ -80,6 +81,7 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
     , m_stack(new QStackedWidget(this))
     , m_tabs(new TabManager(profile, adblock, m_stack, this))
     , m_linkPreview(new QLabel(m_stack))
+    , m_incognito(profile->isOffTheRecord())
 {
 #ifdef Q_OS_WIN
     // Marco nativo de Windows 11 (sombra, esquinas, Snap) con la barra de título dibujada por Sora.
@@ -112,10 +114,13 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
 
     TabStrip* strip = m_titleBar->tabs();
     connect(m_tabs, &TabManager::tabInserted, this, [this, strip](int index) {
+        Tab* tab = m_tabs->tab(index);
+        const QString title = pageTitle(tab->title()); // una pestaña que llega de otra ventana ya lo tiene
         m_syncing = true;
-        strip->insertTab(index, kNewTabTitle);
+        strip->insertTab(index, title.isEmpty() ? kNewTabTitle : title);
+        strip->setPageIcon(index, tab->icon());
         m_syncing = false;
-        watchTab(m_tabs->tab(index));
+        watchTab(tab);
     });
     connect(m_tabs, &TabManager::tabRemoved, this, [this, strip](int index) {
         m_syncing = true;
@@ -133,7 +138,7 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
         strip->setTabText(index, shown.isEmpty() ? kNewTabTitle : shown);
         strip->setTabToolTip(index, shown);
         if (index == m_tabs->currentIndex())
-            setWindowTitle(windowTitleFor(title));
+            setWindowTitle(titleFor(title));
     });
     connect(m_tabs, &TabManager::tabIconChanged, strip, &TabStrip::setPageIcon);
     connect(m_tabs, &TabManager::lastTabClosed, this, &QWidget::close);
@@ -145,6 +150,7 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
     connect(strip, &QTabBar::tabCloseRequested, m_tabs, &TabManager::closeTab);
     connect(strip, &QTabBar::tabMoved, m_tabs, &TabManager::moveTab);
     connect(strip, &TabStrip::newTabRequested, this, &MainWindow::newTab);
+    connect(strip, &TabStrip::tabDetachRequested, this, &MainWindow::tabDetachRequested);
 
     connect(m_titleBar, &TitleBar::minimizeRequested, this, &QWidget::showMinimized);
     connect(m_titleBar, &TitleBar::maximizeToggleRequested, this, &MainWindow::toggleMaximized);
@@ -167,9 +173,30 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
     applyColorScheme(QGuiApplication::styleHints()->colorScheme());
     connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, this, &MainWindow::applyColorScheme);
 
-    setWindowTitle(QStringLiteral("Sora"));
+    setWindowTitle(titleFor({}));
     resize(1280, 800);
-    m_tabs->newTab();
+    if (startWithTab)
+        m_tabs->newTab();
+}
+
+QString MainWindow::titleFor(const QString& pageTitle) const
+{
+    const QString title = windowTitleFor(pageTitle);
+    return m_incognito ? title + QString::fromUtf8(" (incógnito)") : title;
+}
+
+Tab* MainWindow::takeTab(int index)
+{
+    if (Tab* tab = m_tabs->tab(index)) {
+        tab->disconnect(this);
+        tab->page()->disconnect(this);
+    }
+    return m_tabs->takeTab(index);
+}
+
+void MainWindow::adoptTab(Tab* tab, int index)
+{
+    m_tabs->adoptTab(tab, index);
 }
 
 MainWindow::~MainWindow()
@@ -202,7 +229,8 @@ void MainWindow::newTab()
 
 void MainWindow::applyColorScheme(Qt::ColorScheme scheme)
 {
-    const Palette p = nieblaPalette(scheme);
+    // Incógnito siempre en oscuro, como Chrome: se distingue de un vistazo.
+    const Palette p = nieblaPalette(m_incognito ? Qt::ColorScheme::Dark : scheme);
     setStyleSheet(nieblaStyleSheet(p));
     m_titleBar->applyPalette(p);
     m_toolbar->applyPalette(p);
@@ -256,7 +284,7 @@ void MainWindow::showCurrentTab()
     m_toolbar->omnibox()->setUrl(tab->url());
     m_toolbar->setBlockedCount(tab->blockedCount());
     m_linkPreview->hide();
-    setWindowTitle(windowTitleFor(tab->title()));
+    setWindowTitle(titleFor(tab->title()));
     refreshNavigation();
 }
 
@@ -296,6 +324,8 @@ void MainWindow::addShortcuts()
         connect(new QShortcut(keys, this), &QShortcut::activated, this, f);
     };
     on(QKeySequence(Qt::CTRL | Qt::Key_T), [this] { newTab(); });
+    on(QKeySequence(Qt::CTRL | Qt::Key_N), [this] { emit newWindowRequested(false); });
+    on(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_N), [this] { emit newWindowRequested(true); });
     for (auto keys : {QKeySequence(Qt::CTRL | Qt::Key_W), QKeySequence(Qt::CTRL | Qt::Key_F4)})
         on(keys, [this] { m_tabs->closeTab(m_tabs->currentIndex()); });
     for (auto keys : {QKeySequence(Qt::CTRL | Qt::Key_Tab), QKeySequence(Qt::CTRL | Qt::Key_PageDown)})

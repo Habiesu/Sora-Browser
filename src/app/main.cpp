@@ -8,6 +8,7 @@
 #include <QStandardPaths>
 #include <QWebEngineProfile>
 
+#include "app/Browser.h"
 #include "app/MainWindow.h"
 #include "browser/Tab.h"
 #include "privacy/AdblockService.h"
@@ -73,24 +74,27 @@ int main(int argc, char* argv[])
     auto* adblock = new sora::AdblockService(&app);
     adblock->attach(profile);
 
-    sora::MainWindow window(profile, adblock);
-    window.show();
-    QObject::connect(&instance, &sora::SingleInstance::received, &window, [&window](const QString& input) {
+    sora::Browser browser(profile, adblock);
+    sora::MainWindow* window = browser.newWindow();
+    QObject::connect(&instance, &sora::SingleInstance::received, &browser, [&browser](const QString& input) {
+        sora::MainWindow* w = browser.activeWindow();
+        if (!w)
+            return;
         if (input.isEmpty())
-            window.newTab();
+            w->newTab();
         else
-            window.tabs()->newTab(sora::urlFromInput(input));
-        if (window.isMinimized())
-            window.showNormal();
-        window.raise();
-        window.activateWindow();
+            w->tabs()->newTab(sora::urlFromInput(input));
+        if (w->isMinimized())
+            w->showNormal();
+        w->raise();
+        w->activateWindow();
     });
 
     qint64 windowShownMs = -1;
     if (bench) {
         // El primer ciclo del bucle de eventos tras show() es cuando la ventana ya está en pantalla.
-        QTimer::singleShot(0, &window, [&] { windowShownMs = sinceStart.elapsed(); });
-        QObject::connect(window.currentTab(), &QWebEngineView::loadFinished, &app, [&](bool) {
+        QTimer::singleShot(0, window, [&] { windowShownMs = sinceStart.elapsed(); });
+        QObject::connect(window->currentTab(), &QWebEngineView::loadFinished, &app, [&](bool) {
             std::printf("{\"window_shown_ms\":%lld,\"first_load_ms\":%lld}\n",
                         static_cast<long long>(windowShownMs), static_cast<long long>(sinceStart.elapsed()));
             std::fflush(stdout);
@@ -98,7 +102,7 @@ int main(int argc, char* argv[])
         }, Qt::SingleShotConnection);
     }
 
-    window.navigate(positional.isEmpty() ? QStringLiteral("about:blank") : positional.first());
+    window->navigate(positional.isEmpty() ? QStringLiteral("about:blank") : positional.first());
 
     // El motor se prepara después de mostrar la ventana; hasta entonces no se bloquea nada.
     auto* nam = new QNetworkAccessManager(&app);
@@ -111,8 +115,10 @@ int main(int argc, char* argv[])
         nam, &app);
     QObject::connect(filters, &sora::FilterListStore::engineReady, adblock,
                      [adblock](std::shared_ptr<const sora::AdblockEngine> engine) { adblock->setEngine(std::move(engine)); });
-    QObject::connect(filters, &sora::FilterListStore::failed, &window,
-                     [&window](const QString& reason) { window.showNotice(reason); });
+    QObject::connect(filters, &sora::FilterListStore::failed, &browser, [&browser](const QString& reason) {
+        if (sora::MainWindow* w = browser.activeWindow())
+            w->showNotice(reason);
+    });
     filters->start();
 
     return app.exec();

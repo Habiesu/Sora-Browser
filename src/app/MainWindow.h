@@ -24,16 +24,26 @@ QUrl urlFromInput(const QString& input);
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
-    MainWindow(QWebEngineProfile* profile, const AdblockService* adblock, QWidget* parent = nullptr);
+    MainWindow(QWebEngineProfile* profile, const AdblockService* adblock, bool startWithTab = true,
+               QWidget* parent = nullptr);
     ~MainWindow() override;
 
     TabManager* tabs() const { return m_tabs; }
+    bool isIncognito() const { return m_incognito; }
+    // Mover pestañas entre ventanas: la misma página, sin recargar.
+    Tab* takeTab(int index);
+    void adoptTab(Tab* tab, int index = -1);
     Tab* currentTab() const;
     void navigate(const QString& input);
     void newTab();
     void applyColorScheme(Qt::ColorScheme scheme);
     // Aviso breve abajo a la izquierda (p. ej. si fallan las listas de bloqueo).
     void showNotice(const QString& text);
+
+signals:
+    void newWindowRequested(bool incognito);
+    // La pestaña se ha soltado fuera de la tira: ventana nueva o la ventana que haya debajo.
+    void tabDetachRequested(int index, QPoint globalPos);
 
 protected:
     void changeEvent(QEvent* event) override;
@@ -50,6 +60,7 @@ private:
     TabManager* m_tabs;
     QLabel* m_linkPreview;
     QShortcut* m_stop = nullptr; // Esc: solo mientras carga la pestaña visible y el foco está en la web
+    bool m_incognito;
     bool m_syncing = false; // cambios hechos por código en la tira: no reenviarlos
     bool m_maximizePressed = false; // botón maximizar (no cliente) pulsado y aún no soltado
 
@@ -61,6 +72,7 @@ private:
     void leaveMaximizeButton();
     void placeLinkPreview();
     void addShortcuts();
+    QString titleFor(const QString& pageTitle) const;
 };
 
 } // namespace sora

@@ -32,6 +32,33 @@ private slots:
         QCOMPARE(spy.count(), 1);
         QCOMPARE(spy.first().at(0).toInt(), 1);
     }
+    void droppingOutsideDetaches()
+    {
+        TabStrip bar;
+        bar.addTab("A"); bar.addTab("B");
+        bar.resize(1200, 40);
+        bar.show();
+        QSignalSpy spy(&bar, &TabStrip::tabDetachRequested);
+        const QPoint start = bar.tabRect(1).center();
+        const QPoint outside = start + QPoint(0, 150);
+        QTest::mousePress(&bar, Qt::LeftButton, {}, start);
+        QTest::mouseMove(&bar, start + QPoint(0, 40));
+        QTest::mouseMove(&bar, outside);
+        QTest::mouseRelease(&bar, Qt::LeftButton, {}, outside);
+        QCOMPARE(spy.count(), 1);
+        QCOMPARE(spy.first().at(0).toInt(), 1);
+        QCOMPARE(spy.first().at(1).toPoint(), bar.mapToGlobal(outside));
+    }
+    void clickingDoesNotDetach()
+    {
+        TabStrip bar;
+        bar.addTab("A"); bar.addTab("B");
+        bar.resize(1200, 40);
+        bar.show();
+        QSignalSpy spy(&bar, &TabStrip::tabDetachRequested);
+        QTest::mouseClick(&bar, Qt::LeftButton, {}, bar.tabRect(1).center());
+        QCOMPARE(spy.count(), 0);
+    }
     void closeButtonCloses()
     {
         TabStrip bar;

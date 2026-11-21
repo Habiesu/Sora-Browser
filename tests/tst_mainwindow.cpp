@@ -16,6 +16,7 @@ class TestMainWindow : public QObject {
     Q_OBJECT
     QWebEngineProfile* m_profile = nullptr;
     sora::AdblockService m_adblock;
+    QTemporaryDir m_storage;
 
     // Ventana visible y activa: los atajos solo funcionan en la ventana activa.
     std::unique_ptr<sora::MainWindow> openWindow()
@@ -30,7 +31,13 @@ class TestMainWindow : public QObject {
     static QToolButton* shieldOf(sora::MainWindow& w) { return w.findChild<QToolButton*>("ShieldButton"); }
 
 private slots:
-    void initTestCase() { m_profile = new QWebEngineProfile(this); }
+    void initTestCase()
+    {
+        // Perfil normal (con nombre), como el de Sora, en una carpeta temporal.
+        m_profile = new QWebEngineProfile(QStringLiteral("tst-mainwindow"), this);
+        m_profile->setPersistentStoragePath(m_storage.path());
+        m_profile->setCachePath(m_storage.path() + "/cache");
+    }
 
     void startsWithOneTab()
     {

@@ -1,6 +1,7 @@
 add_library(sora_core STATIC
   app/MainWindow.h app/MainWindow.cpp
   app/SingleInstance.h app/SingleInstance.cpp
+  app/Browser.h app/Browser.cpp
   browser/Tab.h browser/Tab.cpp
   browser/TabManager.h browser/TabManager.cpp
   ui/Theme.h ui/Theme.cpp

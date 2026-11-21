@@ -16,6 +16,7 @@ sora_add_test(tst_tabmanager)
 sora_add_test(tst_tabstrip)
 sora_add_test(tst_windowframe)
 sora_add_test(tst_singleinstance)
+sora_add_test(tst_browser)
 
 if(WIN32)
   # Necesita una ventana real de Windows: abre una ventana unos instantes.
