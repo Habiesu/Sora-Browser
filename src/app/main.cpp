@@ -26,6 +26,16 @@
 #include <qt_windows.h>
 #endif
 
+#ifdef Q_OS_WIN
+// En portátiles con dos gráficas, Windows y los controladores de NVIDIA/AMD leen estas exportaciones
+// del .exe y ponen a Sora en la dedicada (como los juegos). En la integrada, capturar la pantalla desde
+// la dedicada (directos de Discord) hacía parpadear las páginas. Sin gráfica dedicada no hacen nada.
+extern "C" {
+__declspec(dllexport) unsigned long NvOptimusEnablement = 1;
+__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+#endif
+
 int main(int argc, char* argv[])
 {
     QElapsedTimer sinceStart; // --bench mide desde aquí

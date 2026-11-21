@@ -18,6 +18,10 @@ Lista viva de cosas vistas al trabajar en Sora que no son urgentes. Al hacer una
 
 ## Limitaciones conocidas
 
+- **Historial: el resaltado al pasar el ratón es cuadrado** dentro de una lista con esquinas
+  redondeadas (se sale por las esquinas de la primera y la última fila).
+- **Parpadeos en las páginas mientras se emite la pantalla en Discord** (21/11/2026): sin emitir,
+  YouTube va perfecto; al empezar a emitir, Sora parpadea. En estudio.
 - **Las webs abiertas no cambian de tema al momento** al cambiarlo en Ajustes: las páginas de Sora
   se recargan solas, las webs lo toman en su próxima carga (Chrome lo aplica al instante).
 - **Los bloqueos se reparten por sitio** (el perfil no sabe de qué pestaña viene cada petición):
