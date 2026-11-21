@@ -102,7 +102,15 @@ int main(int argc, char* argv[])
     sora::MainWindow* window = browser.showFirstWindow();
     const qint64 windowShownMs = sinceStart.elapsed(); // la ventana ya está en pantalla
     mark("ventana en pantalla");
-    window->newTab();
+    // La primera pestaña nace ya con su dirección (antes cargaba "Nueva pestaña" y luego navegaba).
+    const sora::Settings& settings = sora::Settings::instance();
+    const QString homepage = settings.value(QStringLiteral("homepage")).toString();
+    if (!positional.isEmpty())
+        window->tabs()->newTab(sora::urlFromInput(positional.first()));
+    else if (settings.value(QStringLiteral("startup")) == QStringLiteral("homepage") && !homepage.isEmpty())
+        window->tabs()->newTab(sora::urlFromInput(homepage));
+    else
+        window->newTab();
     mark("primera pestaña");
     QObject::connect(&instance, &sora::SingleInstance::received, &browser, [&browser](const QString& input) {
         sora::MainWindow* w = browser.activeWindow();
@@ -120,6 +128,7 @@ int main(int argc, char* argv[])
 
     if (bench) {
         QObject::connect(window->currentTab(), &QWebEngineView::loadFinished, &app, [&](bool) {
+            mark("primera pagina cargada");
             std::printf("{\"window_shown_ms\":%lld,\"first_load_ms\":%lld}\n",
                         static_cast<long long>(windowShownMs), static_cast<long long>(sinceStart.elapsed()));
             std::fflush(stdout);
@@ -127,16 +136,12 @@ int main(int argc, char* argv[])
         }, Qt::SingleShotConnection);
     }
 
-    const sora::Settings& settings = sora::Settings::instance();
-    if (!positional.isEmpty())
-        window->navigate(positional.first());
-    else if (settings.value(QStringLiteral("startup")) == QStringLiteral("homepage")
-             && !settings.value(QStringLiteral("homepage")).toString().isEmpty())
-        window->navigate(settings.value(QStringLiteral("homepage")).toString());
 
     // Historial y marcadores, justo después de mostrar la ventana (no frenan el arranque).
-    QTimer::singleShot(0, &browser, [&browser] {
+    QTimer::singleShot(0, &browser, [&browser, &mark] {
+        mark("abrir historial y marcadores...");
         browser.openStores(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + QStringLiteral("/sora.db"));
+        mark("historial y marcadores abiertos");
     });
 
     // El motor se prepara después de mostrar la ventana; hasta entonces no se bloquea nada.
