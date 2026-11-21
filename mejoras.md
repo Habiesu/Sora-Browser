@@ -20,6 +20,9 @@ Lista viva de cosas vistas al trabajar en Sora que no son urgentes. Al hacer una
 - **La lista de descargas se pierde al cerrar Sora** (vive en memoria; guardarla en `sora.db`).
 - **La barra libre para arrastrar la ventana es estrecha** con muchas pestañas (entre «+» y
   minimizar); Chrome deja siempre un hueco mínimo.
+- **El botón «+» no sigue a las pestañas al arrastrarlas**: mientras se arrastra una pestaña, el «+»
+  se queda quieto en su sitio; solo se recoloca junto a la última pestaña al abrir otra. En Chrome
+  va siempre pegado a la última pestaña, también durante el arrastre.
 - **El icono del puzle** se parece a una nube a 16 px; redibujarlo.
 - **Al cambiar a otra pestaña desde la barra**, la nueva pestaña vacía se queda abierta (Chrome la
   cierra).
