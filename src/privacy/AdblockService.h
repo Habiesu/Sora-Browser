@@ -1,5 +1,7 @@
 #pragma once
+#include <QList>
 #include <QObject>
+#include <QPointer>
 #include <QUrl>
 #include <QWebEngineUrlRequestInfo>
 #include <atomic>
@@ -21,10 +23,12 @@ public:
 
     // Sustituye el motor de forma atómica; nullptr = no bloquear nada.
     void setEngine(std::shared_ptr<const AdblockEngine> engine);
-    void setEnabled(bool enabled) { m_enabled = enabled; } // ajuste del usuario
+    // Ajuste del usuario: apagado no bloquea nada ni toca YouTube.
+    void setEnabled(bool enabled);
     bool decide(const QUrl& url, const QUrl& firstParty, QWebEngineUrlRequestInfo::ResourceType type) const;
     // Pone el interceptor en el perfil: así se bloquea también lo que no sale de una página
-    // (service workers). Cada bloqueo se avisa con blocked().
+    // (service workers). Cada bloqueo se avisa con blocked(). También pone el script que quita los
+    // anuncios de YouTube (resources/adblock/youtube.js).
     void attach(QWebEngineProfile* profile);
 
 signals:
@@ -33,6 +37,8 @@ signals:
 private:
     std::atomic<std::shared_ptr<const AdblockEngine>> m_engine;
     std::atomic<bool> m_enabled{true};
+    QList<QPointer<QWebEngineProfile>> m_profiles;
+    void updateScripts(QWebEngineProfile* profile);
 };
 
 } // namespace sora

@@ -34,6 +34,8 @@ if(WIN32)
 endif()
 
 # Páginas internas (sora://), dentro del ejecutable.
+qt_add_resources(sora_core "adblock" PREFIX "/adblock" BASE "${CMAKE_SOURCE_DIR}/resources/adblock" FILES
+  ${CMAKE_SOURCE_DIR}/resources/adblock/youtube.js)
 qt_add_resources(sora_core "pages" PREFIX "/pages" BASE "${CMAKE_SOURCE_DIR}/resources/pages" FILES
   ${CMAKE_SOURCE_DIR}/resources/pages/newtab.html
   ${CMAKE_SOURCE_DIR}/resources/pages/newtab-incognito.html

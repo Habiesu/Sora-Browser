@@ -21,6 +21,7 @@ sora_add_test(tst_internalpages)
 sora_add_test(tst_mainmenu)
 sora_add_test(tst_stores)
 sora_add_test(tst_suggestions)
+sora_add_test(tst_youtube)
 
 if(WIN32)
   # Necesita una ventana real de Windows: abre una ventana unos instantes.
