@@ -29,6 +29,9 @@ public:
     void setBookmarked(bool bookmarked);
     void applyPalette(const Palette& p);
 
+protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
+
 signals:
     void backRequested();
     void forwardRequested();

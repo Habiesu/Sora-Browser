@@ -1,7 +1,9 @@
 #include "ui/Toolbar.h"
 
 #include <QHBoxLayout>
+#include <QEvent>
 #include <QMenu>
+#include <QScreen>
 #include <QToolButton>
 
 #include "ui/Icons.h"
@@ -54,6 +56,9 @@ Toolbar::Toolbar(QWidget* parent)
 
     m_mainMenu = new MainMenu(this);
     m_menu->setMenu(m_mainMenu);
+    // Como en Chrome: los menús de la derecha se abren hacia dentro de la ventana.
+    for (QMenu* menu : {static_cast<QMenu*>(m_mainMenu), m_extensionsMenu, m_shieldMenu})
+        menu->installEventFilter(this);
     m_menu->setPopupMode(QToolButton::InstantPopup);
 
     auto* layout = new QHBoxLayout(this);
@@ -77,6 +82,19 @@ Toolbar::Toolbar(QWidget* parent)
     setNavigation(false, false, false);
     refreshIcons();
     setBlockedCount(0);
+}
+
+bool Toolbar::eventFilter(QObject* watched, QEvent* event)
+{
+    if (event->type() == QEvent::Show) {
+        auto* menu = static_cast<QMenu*>(watched);
+        const QToolButton* button = menu == m_mainMenu ? m_menu : menu == m_extensionsMenu ? m_extensions : m_shield;
+        // El borde derecho del menú, bajo el borde derecho de su botón (sin salirse de la pantalla).
+        const QPoint corner = button->mapToGlobal(QPoint(button->width(), button->height()));
+        const QRect screen = button->screen()->availableGeometry();
+        menu->move(std::max(screen.left(), corner.x() - menu->width()), menu->y());
+    }
+    return QWidget::eventFilter(watched, event);
 }
 
 void Toolbar::setNavigation(bool canBack, bool canForward, bool loading)
