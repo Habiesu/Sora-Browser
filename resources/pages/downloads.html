@@ -43,7 +43,7 @@
     while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
     return (i ? n.toFixed(1) : n) + ' ' + u[i];
   };
-  const states = { done: 'Completada', cancelled: 'Cancelada', failed: 'Error al descargar', paused: 'En pausa' };
+  const states = { done: 'Completada', cancelled: 'Cancelada', failed: 'Error al descargar', paused: 'En pausa', removed: 'Eliminado' };
   function render(items) {
     list.textContent = '';
     list.hidden = items.length === 0;

@@ -11,19 +11,22 @@ class QWebEngineProfile;
 namespace sora {
 
 // Descargas de todos los perfiles: se aceptan sin preguntar en la carpeta de descargas del perfil
-// (como Chrome). shortcut: la lista vive en memoria y se pierde al cerrar Sora; guardarla en
-// sora.db si el usuario echa de menos las descargas antiguas.
+// (como Chrome). Las terminadas se guardan en sora.db (menos las de incógnito) y siguen en la lista
+// al volver a abrir Sora.
 class DownloadManager : public QObject {
     Q_OBJECT
 public:
     using QObject::QObject;
+    ~DownloadManager() override;
 
     void attach(QWebEngineProfile* profile);
+    // Carga las descargas de otras veces y guarda ahí las que terminen.
+    void openHistory(const QString& databasePath);
     // "Guardar página como": devuelve la ruta elegida o vacío para cancelar. Sin él, va a Descargas.
     std::function<QString(const QString& suggestedPath)> askSavePath;
 
-    // [{id, name, url, path, received, total, state: "progress"|"paused"|"done"|"cancelled"|"failed"}],
-    // la más reciente primero.
+    // [{id, name, url, path, received, total, state: "progress"|"paused"|"done"|"cancelled"|"failed"|"removed"}],
+    // la más reciente primero. Las de otras veces tienen id negativo; "removed" = el archivo ya no está.
     QVariantList list() const;
     void cancel(int id);
     void pause(int id);
@@ -38,6 +41,11 @@ signals:
 
 private:
     QList<QPointer<QWebEngineDownloadRequest>> m_items; // el id es la posición
+    QVariantList m_past; // de otras veces, como las da list()
+    QString m_connection;
+
+    void save(const QWebEngineDownloadRequest* request);
+    QString pastPath(int id) const;
 
     QWebEngineDownloadRequest* item(int id) const;
 };

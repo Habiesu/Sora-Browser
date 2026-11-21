@@ -101,6 +101,7 @@ private slots:
         sora::installInternalPages(&profile);
         sora::DownloadManager downloads;
         downloads.attach(&profile);
+        downloads.openHistory(m_storage.filePath("descargas.db"));
         sora::HistoryStore history(m_storage.filePath("p4.db"));
         sora::BookmarkStore bookmarks(m_storage.filePath("p4.db"));
         sora::InternalApi api(&history, &bookmarks, &downloads);
@@ -116,6 +117,21 @@ private slots:
         sora::Page page(&profile);
         page.setUrl(QUrl("sora://downloads"));
         QTRY_VERIFY_WITH_TIMEOUT(runJs(page, "document.body.innerText").toString().contains("lobo.txt"), 8000);
+
+        // Al volver a abrir Sora la lista sigue ahí (como en Chrome).
+        sora::DownloadManager later;
+        later.openHistory(m_storage.filePath("descargas.db"));
+        QCOMPARE(later.list().size(), 1);
+        QCOMPARE(later.list().first().toMap().value("name").toString(), QString("lobo.txt"));
+        QCOMPARE(later.list().first().toMap().value("state").toString(), QString("done"));
+        file.close();
+        QVERIFY(QFile::remove(m_storage.filePath("bajadas/lobo.txt")));
+        QCOMPARE(later.list().first().toMap().value("state").toString(), QString("removed"));
+        later.clearFinished();
+        QCOMPARE(later.list().size(), 0);
+        sora::DownloadManager empty;
+        empty.openHistory(m_storage.filePath("descargas.db"));
+        QCOMPARE(empty.list().size(), 0);
     }
     void settingsPageChangesSearchEngine()
     {

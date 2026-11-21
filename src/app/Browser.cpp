@@ -93,6 +93,7 @@ void Browser::openStores(const QString& databasePath)
 {
     m_history = std::make_unique<HistoryStore>(databasePath);
     m_bookmarks = new BookmarkStore(databasePath, this);
+    m_downloads->openHistory(databasePath);
     auto* api = new InternalApi(m_history.get(), m_bookmarks, m_downloads, this);
     api->setProfiles({m_profile});
     m_api = api;
