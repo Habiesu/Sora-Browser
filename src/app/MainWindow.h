@@ -12,6 +12,8 @@ namespace sora {
 
 class AdblockService;
 class BookmarksBar;
+class BookmarkStore;
+class HistoryStore;
 class FindBar;
 class Tab;
 class TabManager;
@@ -38,6 +40,8 @@ public:
     Tab* currentTab() const;
     void navigate(const QString& input);
     void newTab();
+    // Historial (no se usa en incógnito) y marcadores; los pone Browser cuando están listos.
+    void setStores(HistoryStore* history, BookmarkStore* bookmarks);
     void applyColorScheme(Qt::ColorScheme scheme);
     // Aviso breve abajo a la izquierda (p. ej. si fallan las listas de bloqueo).
     void showNotice(const QString& text);
@@ -62,6 +66,8 @@ private:
     TabManager* m_tabs;
     QLabel* m_linkPreview;
     FindBar* m_findBar;
+    HistoryStore* m_history = nullptr;
+    BookmarkStore* m_bookmarkStore = nullptr;
     bool m_bookmarksWanted = true; // lo que el usuario eligió (Ctrl+Mayús+B), fuera de pantalla completa
     bool m_wasMaximized = false;
     bool m_pageFullScreen = false; // un vídeo pidió pantalla completa: F11 se la quita a él
@@ -86,6 +92,8 @@ private:
     void openDevTools();
     void printPage();
     void placeFindBar();
+    void toggleBookmark();
+    void refreshStar();
 };
 
 } // namespace sora

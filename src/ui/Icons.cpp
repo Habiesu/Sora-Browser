@@ -66,6 +66,9 @@ Shape shapeFor(Icon which)
         p.closeSubpath();
         s.fill = true;
         break;
+    case Icon::StarFilled:
+        s.fill = true;
+        [[fallthrough]];
     case Icon::Star:
         p = polyline({{12, 3}, {14.7, 8.6}, {20.8, 9.5}, {16.4, 13.8}, {17.4, 19.9},
                       {12, 17}, {6.6, 19.9}, {7.6, 13.8}, {3.2, 9.5}, {9.3, 8.6}});

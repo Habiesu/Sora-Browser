@@ -6,6 +6,8 @@
 #include "browser/Tab.h"
 #include "browser/TabManager.h"
 #include "privacy/AdblockService.h"
+#include "data/BookmarkStore.h"
+#include <QToolButton>
 
 using sora::Browser;
 using sora::MainWindow;
@@ -98,6 +100,16 @@ private slots:
         MainWindow* incognito = browser.newWindow(true);
         QVERIFY(!browser.moveTab(normal, 1, incognito, 0));
         QCOMPARE(normal->tabs()->count(), 2);
+    }
+    void storesReachEveryWindow()
+    {
+        Browser browser(m_profile, &m_adblock);
+        browser.newWindow();
+        browser.openStores(m_storage.filePath("sora.db"));
+        browser.bookmarks()->add(QUrl("https://a.test/"), "A");
+        MainWindow* later = browser.newWindow();
+        auto* bar = later->findChild<QWidget*>("BookmarksBar");
+        QTRY_VERIFY(bar->findChildren<QToolButton*>().size() == 1);
     }
     void ctrlNOpensWindow()
     {

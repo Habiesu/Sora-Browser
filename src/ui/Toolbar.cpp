@@ -28,7 +28,7 @@ Toolbar::Toolbar(QWidget* parent)
     , m_reload(toolButton(this, tr("Recargar (F5)")))
     , m_omnibox(new Omnibox(this))
     , m_shield(toolButton(this, {}))
-    , m_star(toolButton(this, tr("Marcadores: llegan en el próximo hito")))
+    , m_star(toolButton(this, tr("Añadir esta página a marcadores (Ctrl+D)")))
     , m_menu(toolButton(this, tr("Personaliza y controla Sora")))
     , m_palette(nieblaPalette(Qt::ColorScheme::Light))
 {
@@ -40,7 +40,9 @@ Toolbar::Toolbar(QWidget* parent)
     m_shield->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     m_shield->setMinimumWidth(48); // el número crece con los bloqueos
     m_shield->setMaximumWidth(QWIDGETSIZE_MAX);
-    m_star->setEnabled(false);
+    m_star->setObjectName(QStringLiteral("StarButton"));
+    m_star->setCheckable(true);
+    connect(m_star, &QToolButton::clicked, this, &Toolbar::starClicked);
 
     m_mainMenu = new MainMenu(this);
     m_menu->setMenu(m_mainMenu);
@@ -82,6 +84,13 @@ void Toolbar::setBlockedCount(int count)
     m_shield->setToolTip(tr("Bloqueados en esta página: %1").arg(count));
 }
 
+void Toolbar::setBookmarked(bool bookmarked)
+{
+    m_star->setChecked(bookmarked);
+    m_star->setToolTip(bookmarked ? tr("Quitar de marcadores (Ctrl+D)") : tr("Añadir esta página a marcadores (Ctrl+D)"));
+    refreshIcons();
+}
+
 void Toolbar::applyPalette(const Palette& p)
 {
     m_palette = p;
@@ -95,7 +104,7 @@ void Toolbar::refreshIcons()
     m_forward->setIcon(icon(Icon::Forward, m_palette.text));
     m_reload->setIcon(icon(m_loading ? Icon::Stop : Icon::Reload, m_palette.text));
     m_shield->setIcon(icon(Icon::Shield, m_palette.shield));
-    m_star->setIcon(icon(Icon::Star, m_palette.text));
+    m_star->setIcon(m_star->isChecked() ? icon(Icon::StarFilled, m_palette.shield) : icon(Icon::Star, m_palette.text));
     m_menu->setIcon(icon(Icon::Menu, m_palette.text));
 }
 

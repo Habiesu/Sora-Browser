@@ -25,6 +25,8 @@
 
 #include "app/InternalPages.h"
 #include "browser/Tab.h"
+#include "data/BookmarkStore.h"
+#include "data/HistoryStore.h"
 #include "browser/TabManager.h"
 #include "ui/BookmarksBar.h"
 #include "ui/FindBar.h"
@@ -185,6 +187,13 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
     connect(m_toolbar, &Toolbar::reloadRequested, this, [this] { if (auto* t = currentTab()) t->reload(); });
     connect(m_toolbar, &Toolbar::stopRequested, this, [this] { if (auto* t = currentTab()) t->stop(); });
     connect(m_toolbar->mainMenu(), &MainMenu::command, this, &MainWindow::runCommand);
+    connect(m_toolbar, &Toolbar::starClicked, this, &MainWindow::toggleBookmark);
+    connect(m_bookmarks, &BookmarksBar::openRequested, this, [this](const QUrl& url, bool inNewTab) {
+        if (inNewTab)
+            m_tabs->newTab(url, m_tabs->currentIndex() + 1, false);
+        else if (Tab* t = currentTab())
+            t->setUrl(url);
+    });
     connect(m_toolbar->omnibox(), &Omnibox::submitted, this, [this](const QString& text) {
         navigate(text);
         if (auto* t = currentTab())
@@ -286,7 +295,7 @@ void MainWindow::runCommand(MainMenu::Command command)
                                     QString::fromLatin1(qWebEngineChromiumVersion())));
         break;
     case C::Quit: qApp->closeAllWindows(); break;
-    case C::AddBookmark:
+    case C::AddBookmark: toggleBookmark(); break;
     case C::SavePage:
         break; // marcadores y descargas: tareas siguientes del plan del Hito 3
     }
@@ -380,6 +389,37 @@ void MainWindow::printPage()
     t->print(printer);
 }
 
+void MainWindow::setStores(HistoryStore* history, BookmarkStore* bookmarks)
+{
+    m_history = m_incognito ? nullptr : history; // incógnito no deja rastro
+    if (m_bookmarkStore)
+        m_bookmarkStore->disconnect(this);
+    m_bookmarkStore = bookmarks;
+    if (m_bookmarkStore)
+        connect(m_bookmarkStore, &BookmarkStore::changed, this, &MainWindow::refreshStar);
+    m_bookmarks->setStore(bookmarks);
+    refreshStar();
+}
+
+void MainWindow::toggleBookmark()
+{
+    Tab* t = currentTab();
+    if (!m_bookmarkStore || !t || t->url().scheme() == QLatin1String("sora") || t->url().isEmpty()) {
+        refreshStar();
+        return;
+    }
+    if (m_bookmarkStore->contains(t->url()))
+        m_bookmarkStore->removeUrl(t->url());
+    else
+        m_bookmarkStore->add(t->url(), t->title());
+}
+
+void MainWindow::refreshStar()
+{
+    Tab* t = currentTab();
+    m_toolbar->setBookmarked(m_bookmarkStore && t && m_bookmarkStore->contains(t->url()));
+}
+
 void MainWindow::placeFindBar()
 {
     m_findBar->adjustSize();
@@ -417,10 +457,16 @@ void MainWindow::watchTab(Tab* tab)
     };
     connect(tab, &QWebEngineView::urlChanged, this, ifCurrent([this](const QUrl& url) {
         m_toolbar->omnibox()->setUrl(url);
+        refreshStar();
         refreshNavigation();
     }));
     connect(tab, &QWebEngineView::loadStarted, this, ifCurrent([this] { refreshNavigation(); }));
     connect(tab, &QWebEngineView::loadFinished, this, ifCurrent([this](bool) { refreshNavigation(); }));
+    connect(tab, &QWebEngineView::loadFinished, this, [this, tab](bool ok) {
+        const QString scheme = tab->url().scheme();
+        if (ok && m_history && (scheme == QLatin1String("https") || scheme == QLatin1String("http")))
+            m_history->addVisit(tab->url(), tab->title());
+    });
     connect(tab->page(), &QWebEnginePage::fullScreenRequested, this, [this](QWebEngineFullScreenRequest request) {
         request.accept();
         m_pageFullScreen = request.toggleOn();
@@ -450,6 +496,7 @@ void MainWindow::showCurrentTab()
     m_toolbar->setBlockedCount(tab->blockedCount());
     m_linkPreview->hide();
     m_findBar->hide();
+    refreshStar();
     m_toolbar->mainMenu()->setZoomPercent(qRound(tab->zoomFactor() * 100));
     setWindowTitle(titleFor(tab->title()));
     refreshNavigation();

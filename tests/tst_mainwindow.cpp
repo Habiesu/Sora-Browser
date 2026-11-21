@@ -11,6 +11,8 @@
 #include "ui/TitleBar.h"
 #include "ui/MainMenu.h"
 #include "ui/BookmarksBar.h"
+#include "data/BookmarkStore.h"
+#include "data/HistoryStore.h"
 #include <QLabel>
 #include <QLineEdit>
 #include <QWebEngineSettings>
@@ -188,6 +190,64 @@ private slots:
         w->currentTab()->setHtml("<button id=b onclick='document.documentElement.requestFullscreen()'>x</button>", QUrl("https://v.test/"));
         QTRY_COMPARE(loaded.count(), 1);
         QVERIFY(w->currentTab()->page()->settings()->testAttribute(QWebEngineSettings::FullScreenSupportEnabled));
+    }
+    void visitsGoToHistoryButNotInIncognito()
+    {
+        sora::HistoryStore history(m_storage.filePath("h1.db"));
+        sora::BookmarkStore bookmarks(m_storage.filePath("h1.db"));
+        auto w = openWindow();
+        w->setStores(&history, &bookmarks);
+        QSignalSpy loaded(w->currentTab(), &sora::Tab::loadFinished);
+        w->currentTab()->setHtml("<title>Lobos</title>", QUrl("https://h.test/"));
+        QTRY_COMPARE(loaded.count(), 1);
+        QTRY_COMPARE(history.search("h.test").size(), 1);
+        QCOMPARE(history.search("h.test").first().title, QString("Lobos"));
+
+        auto* otr = new QWebEngineProfile(this); // incógnito
+        sora::MainWindow incognito(otr, &m_adblock);
+        incognito.setStores(&history, &bookmarks);
+        QSignalSpy loaded2(incognito.currentTab(), &sora::Tab::loadFinished);
+        incognito.currentTab()->setHtml("<title>Secreto</title>", QUrl("https://secreto.test/"));
+        QTRY_VERIFY(loaded2.count() >= 1);
+        QTest::qWait(100);
+        QCOMPARE(history.search("secreto").size(), 0);
+    }
+    void starAndCtrlDToggleBookmark()
+    {
+        sora::HistoryStore history(m_storage.filePath("b1.db"));
+        sora::BookmarkStore bookmarks(m_storage.filePath("b1.db"));
+        auto w = openWindow();
+        w->setStores(&history, &bookmarks);
+        QSignalSpy loaded(w->currentTab(), &sora::Tab::loadFinished);
+        w->currentTab()->setHtml("<title>Pinos</title>", QUrl("https://p.test/"));
+        QTRY_COMPARE(loaded.count(), 1);
+        auto* star = w->findChild<QToolButton*>("StarButton");
+        QVERIFY(star && star->isEnabled() && !star->isChecked());
+        QTest::keyClick(w.get(), Qt::Key_D, Qt::ControlModifier);
+        QVERIFY(bookmarks.contains(QUrl("https://p.test/")));
+        QCOMPARE(bookmarks.all().first().title, QString("Pinos"));
+        QVERIFY(star->isChecked());
+        QTest::mouseClick(star, Qt::LeftButton);
+        QVERIFY(!bookmarks.contains(QUrl("https://p.test/")));
+        QVERIFY(!star->isChecked());
+    }
+    void bookmarksBarShowsAndOpensBookmarks()
+    {
+        sora::HistoryStore history(m_storage.filePath("b2.db"));
+        sora::BookmarkStore bookmarks(m_storage.filePath("b2.db"));
+        bookmarks.add(QUrl("https://lobo.test/"), "Lobo");
+        auto w = openWindow();
+        w->setStores(&history, &bookmarks);
+        auto* bar = w->findChild<sora::BookmarksBar*>();
+        QToolButton* button = nullptr;
+        for (auto* b : bar->findChildren<QToolButton*>())
+            if (b->text() == "Lobo") button = b;
+        QVERIFY(button);
+        QTest::mouseClick(button, Qt::LeftButton);
+        QTRY_COMPARE(w->currentTab()->url(), QUrl("https://lobo.test/"));
+        bookmarks.add(QUrl("https://pino.test/"), "Pino"); // la barra sigue al almacén
+        QTRY_VERIFY(std::any_of(bar->findChildren<QToolButton*>().begin(), bar->findChildren<QToolButton*>().end(),
+                                [](QToolButton* b) { return b->text() == "Pino"; }));
     }
     void ctrlTOpensTab()
     {

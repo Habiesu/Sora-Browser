@@ -109,6 +109,11 @@ int main(int argc, char* argv[])
     if (!positional.isEmpty())
         window->navigate(positional.first());
 
+    // Historial y marcadores, justo después de mostrar la ventana (no frenan el arranque).
+    QTimer::singleShot(0, &browser, [&browser] {
+        browser.openStores(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + QStringLiteral("/sora.db"));
+    });
+
     // El motor se prepara después de mostrar la ventana; hasta entonces no se bloquea nada.
     auto* nam = new QNetworkAccessManager(&app);
     auto* filters = new sora::FilterListStore(

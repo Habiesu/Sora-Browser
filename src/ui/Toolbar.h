@@ -19,6 +19,7 @@ public:
     MainMenu* mainMenu() const { return m_mainMenu; }
     void setNavigation(bool canBack, bool canForward, bool loading);
     void setBlockedCount(int count);
+    void setBookmarked(bool bookmarked);
     void applyPalette(const Palette& p);
 
 signals:
@@ -26,6 +27,7 @@ signals:
     void forwardRequested();
     void reloadRequested();
     void stopRequested();
+    void starClicked();
 
 private:
     QToolButton* m_back;

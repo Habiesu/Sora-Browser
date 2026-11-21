@@ -7,6 +7,8 @@
 #include "app/InternalPages.h"
 #include "app/MainWindow.h"
 #include "browser/Tab.h"
+#include "data/BookmarkStore.h"
+#include "data/HistoryStore.h"
 #include "browser/TabManager.h"
 #include "privacy/AdblockService.h"
 #include "ui/TabStrip.h"
@@ -45,6 +47,8 @@ MainWindow* Browser::createWindow(bool incognito, bool startWithTab)
         profile = m_incognito;
     }
     auto* w = new MainWindow(profile, m_adblock, startWithTab);
+    if (m_history)
+        w->setStores(m_history.get(), m_bookmarks);
     w->setAttribute(Qt::WA_DeleteOnClose);
     m_windows.append(w);
     m_active = w;
@@ -54,6 +58,17 @@ MainWindow* Browser::createWindow(bool incognito, bool startWithTab)
             [this, w](int index, QPoint globalPos) { onTabDetachRequested(w, index, globalPos); });
     return w;
 }
+
+void Browser::openStores(const QString& databasePath)
+{
+    m_history = std::make_unique<HistoryStore>(databasePath);
+    m_bookmarks = new BookmarkStore(databasePath, this);
+    for (const auto& w : std::as_const(m_windows))
+        if (w)
+            w->setStores(m_history.get(), m_bookmarks);
+}
+
+Browser::~Browser() = default;
 
 QList<MainWindow*> Browser::windows() const
 {
