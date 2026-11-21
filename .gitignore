@@ -3,3 +3,4 @@ build*/
 adblock-ffi/target/
 dist/
 .qt/
+.cef/
