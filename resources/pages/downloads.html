@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Descargas</title>
+<link rel="stylesheet" href="sora://res/sora.css">
+<link rel="icon" href="sora://res/sora.svg">
+<script src="sora://res/qwebchannel.js"></script>
+<script src="sora://res/sora.js"></script>
+<style>
+  main { max-width: 820px; margin: 0 auto; padding: 32px 24px 64px; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0; flex: 1; }
+  ul { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  li { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-top: 1px solid var(--line); }
+  li:first-child { border-top: none; }
+  .info { flex: 1; min-width: 0; }
+  .name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); background: none; border: none; padding: 0; text-align: left; font: inherit; }
+  button.name { cursor: pointer; text-decoration: underline; }
+  .name.gone { text-decoration: line-through; color: var(--muted); }
+  .meta { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  progress { width: 100%; height: 4px; margin-top: 6px; accent-color: var(--accent, #2f6b4f); }
+  li > button { padding: 2px 10px; flex: none; }
+  #empty { color: var(--muted); text-align: center; margin-top: 64px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Descargas</h1>
+    <button id="clear">Borrar lista</button>
+  </header>
+  <ul id="list"></ul>
+  <p id="empty" hidden>Aún no has descargado nada.</p>
+</main>
+<script>
+  const list = document.getElementById('list');
+  let timer = null;
+  const size = function (n) {
+    if (n < 0) return '?';
+    const u = ['B', 'KB', 'MB', 'GB'];
+    let i = 0;
+    while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+    return (i ? n.toFixed(1) : n) + ' ' + u[i];
+  };
+  const states = { done: 'Completada', cancelled: 'Cancelada', failed: 'Error al descargar', paused: 'En pausa' };
+  function render(items) {
+    list.textContent = '';
+    list.hidden = items.length === 0;
+    document.getElementById('empty').hidden = items.length > 0;
+    let running = false;
+    items.forEach(function (d) {
+      const act = function (a) { return function () { sora.downloadAction(d.id, a); load(); }; };
+      const busy = d.state === 'progress' || d.state === 'paused';
+      running = running || d.state === 'progress';
+      const name = d.state === 'done'
+        ? el('button', { class: 'name', text: d.name, title: d.path, onclick: act('open') })
+        : el('span', { class: 'name' + (busy ? '' : ' gone'), text: d.name, title: d.path });
+      const meta = busy ? size(d.received) + ' de ' + size(d.total) + (d.state === 'paused' ? ' · En pausa' : '')
+                        : states[d.state] + ' · ' + hostOf(d.url);
+      const info = el('div', { class: 'info' }, [name, el('div', { class: 'meta', text: meta })]);
+      if (busy && d.total > 0) info.append(el('progress', { max: d.total, value: d.received }));
+      const buttons = [];
+      if (d.state === 'progress') buttons.push(el('button', { text: 'Pausar', onclick: act('pause') }));
+      if (d.state === 'paused') buttons.push(el('button', { text: 'Reanudar', onclick: act('resume') }));
+      if (busy) buttons.push(el('button', { text: 'Cancelar', onclick: act('cancel') }));
+      if (d.state === 'done') buttons.push(el('button', { text: 'Mostrar en la carpeta', onclick: act('show') }));
+      list.append(el('li', {}, [info].concat(buttons)));
+    });
+    // El avance de bytes no llega como aviso: mientras algo baja, se consulta cada medio segundo.
+    clearTimeout(timer);
+    if (running) timer = setTimeout(load, 500);
+  }
+  function load() { onSora(function (s) { s.downloads(render); }); }
+  document.getElementById('clear').addEventListener('click', function () { sora.clearDownloads(); });
+  onSora(function (s) { s.downloadsChanged.connect(load); });
+  load();
+</script>
+</body>
+</html>

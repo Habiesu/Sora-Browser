@@ -6,6 +6,7 @@ add_library(sora_core STATIC
   app/InternalApi.h app/InternalApi.cpp
   browser/Tab.h browser/Tab.cpp
   browser/TabManager.h browser/TabManager.cpp
+  browser/DownloadManager.h browser/DownloadManager.cpp
   ui/Theme.h ui/Theme.cpp
   ui/Icons.h ui/Icons.cpp
   ui/TabStrip.h ui/TabStrip.cpp
@@ -36,6 +37,7 @@ qt_add_resources(sora_core "pages" PREFIX "/pages" BASE "${CMAKE_SOURCE_DIR}/res
   ${CMAKE_SOURCE_DIR}/resources/pages/newtab-incognito.html
   ${CMAKE_SOURCE_DIR}/resources/pages/history.html
   ${CMAKE_SOURCE_DIR}/resources/pages/bookmarks.html
+  ${CMAKE_SOURCE_DIR}/resources/pages/downloads.html
   ${CMAKE_SOURCE_DIR}/resources/pages/res/sora.js
   ${CMAKE_SOURCE_DIR}/resources/pages/res/sora.css
   ${CMAKE_SOURCE_DIR}/resources/pages/res/sora.svg

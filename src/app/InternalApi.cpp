@@ -2,18 +2,50 @@
 
 #include <QUrl>
 
+#include "browser/DownloadManager.h"
 #include "data/BookmarkStore.h"
 #include "data/HistoryStore.h"
 
 namespace sora {
 
-InternalApi::InternalApi(HistoryStore* history, BookmarkStore* bookmarks, QObject* parent)
+InternalApi::InternalApi(HistoryStore* history, BookmarkStore* bookmarks, DownloadManager* downloads,
+                         QObject* parent)
     : QObject(parent)
     , m_history(history)
     , m_bookmarks(bookmarks)
+    , m_downloads(downloads)
 {
     if (m_bookmarks)
         connect(m_bookmarks, &BookmarkStore::changed, this, &InternalApi::bookmarksChanged);
+    if (m_downloads)
+        connect(m_downloads, &DownloadManager::changed, this, &InternalApi::downloadsChanged);
+}
+
+QVariantList InternalApi::downloads() const
+{
+    return m_downloads ? m_downloads->list() : QVariantList();
+}
+
+void InternalApi::downloadAction(int id, const QString& action)
+{
+    if (!m_downloads)
+        return;
+    if (action == QLatin1String("cancel"))
+        m_downloads->cancel(id);
+    else if (action == QLatin1String("pause"))
+        m_downloads->pause(id);
+    else if (action == QLatin1String("resume"))
+        m_downloads->resume(id);
+    else if (action == QLatin1String("open"))
+        m_downloads->open(id);
+    else if (action == QLatin1String("show"))
+        m_downloads->showInFolder(id);
+}
+
+void InternalApi::clearDownloads()
+{
+    if (m_downloads)
+        m_downloads->clearFinished();
 }
 
 QVariantList InternalApi::history(const QString& query) const

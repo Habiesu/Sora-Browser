@@ -5,6 +5,7 @@
 #include "app/InternalPages.h"
 #include "browser/Tab.h"
 #include "app/InternalApi.h"
+#include "browser/DownloadManager.h"
 #include "data/BookmarkStore.h"
 #include "data/HistoryStore.h"
 #include <QTemporaryDir>
@@ -88,6 +89,30 @@ private slots:
                                   QString("Pino"), 8000);
         runJs(page, QStringLiteral("sora.renameBookmark(%1, 'Pino verde')").arg(id));
         QTRY_COMPARE(bookmarks.all().first().title, QString("Pino verde"));
+    }
+    void downloadsAreSavedAndListed()
+    {
+        QWebEngineProfile profile(QStringLiteral("descargas"));
+        profile.setPersistentStoragePath(m_storage.filePath("perfil-descargas"));
+        profile.setDownloadPath(m_storage.filePath("bajadas"));
+        sora::installInternalPages(&profile);
+        sora::DownloadManager downloads;
+        downloads.attach(&profile);
+        sora::HistoryStore history(m_storage.filePath("p4.db"));
+        sora::BookmarkStore bookmarks(m_storage.filePath("p4.db"));
+        sora::InternalApi api(&history, &bookmarks, &downloads);
+        sora::setInternalApi(&api);
+
+        sora::Page web(&profile);
+        web.download(QUrl("data:text/plain,hola%20lobo"), QStringLiteral("lobo.txt"));
+        QTRY_COMPARE_WITH_TIMEOUT(api.downloads().value(0).toMap().value("state").toString(), QString("done"), 8000);
+        QFile file(m_storage.filePath("bajadas/lobo.txt"));
+        QVERIFY(file.open(QIODevice::ReadOnly));
+        QCOMPARE(file.readAll(), QByteArray("hola lobo"));
+
+        sora::Page page(&profile);
+        page.setUrl(QUrl("sora://downloads"));
+        QTRY_VERIFY_WITH_TIMEOUT(runJs(page, "document.body.innerText").toString().contains("lobo.txt"), 8000);
     }
     void webPagesDoNotGetTheBridge()
     {

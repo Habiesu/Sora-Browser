@@ -142,14 +142,14 @@ private slots:
         QCOMPARE(page->action(QWebEnginePage::OpenLinkInNewTab)->text(), QString::fromUtf8("Abrir enlace en una pestaña nueva"));
         QCOMPARE(page->action(QWebEnginePage::Copy)->text(), QString("Copiar"));
     }
-    void downloadActionsAreHiddenUntilDownloadsExist()
+    void downloadActionsAreInSpanish()
     {
         QStackedWidget stack;
         TabManager tabs(m_profile, &m_adblock, &stack);
         QWebEnginePage* page = tabs.newTab()->page();
-        for (auto a : {QWebEnginePage::SavePage, QWebEnginePage::DownloadLinkToDisk,
-                       QWebEnginePage::DownloadImageToDisk, QWebEnginePage::DownloadMediaToDisk})
-            QVERIFY(!page->action(a)->isVisible());
+        QCOMPARE(page->action(QWebEnginePage::DownloadImageToDisk)->text(), QString("Descargar imagen"));
+        QVERIFY(page->action(QWebEnginePage::SavePage)->isVisible());
+        QVERIFY(!page->action(QWebEnginePage::InspectElement)->isVisible());
     }
     void webglOffOnlyWhereItCrashes()
     {

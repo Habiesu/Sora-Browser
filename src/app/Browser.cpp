@@ -2,11 +2,13 @@
 
 #include <QApplication>
 #include <QEvent>
+#include <QFileDialog>
 #include <QWebEngineProfile>
 
 #include "app/InternalApi.h"
 #include "app/InternalPages.h"
 #include "app/MainWindow.h"
+#include "browser/DownloadManager.h"
 #include "browser/Tab.h"
 #include "data/BookmarkStore.h"
 #include "data/HistoryStore.h"
@@ -20,7 +22,17 @@ Browser::Browser(QWebEngineProfile* profile, AdblockService* adblock, QObject* p
     : QObject(parent)
     , m_profile(profile)
     , m_adblock(adblock)
+    , m_downloads(new DownloadManager(this))
 {
+    m_downloads->attach(m_profile);
+    m_downloads->askSavePath = [this](const QString& suggested) {
+        return QFileDialog::getSaveFileName(activeWindow(), tr("Guardar página como"), suggested,
+                                            tr("Página web, un solo archivo (*.mhtml)"));
+    };
+    connect(m_downloads, &DownloadManager::started, this, [this](const QString& name) {
+        if (MainWindow* w = activeWindow())
+            w->showNotice(tr("Descargando %1 (Ctrl+J para ver las descargas)").arg(name));
+    });
     connect(qApp, &QApplication::focusWindowChanged, this, [this] {
         for (const auto& w : std::as_const(m_windows))
             if (w && w->isActiveWindow())
@@ -44,6 +56,7 @@ MainWindow* Browser::createWindow(bool incognito, bool startWithTab)
             if (m_adblock)
                 m_adblock->attach(m_incognito);
             installInternalPages(m_incognito);
+            m_downloads->attach(m_incognito);
         }
         profile = m_incognito;
     }
@@ -64,7 +77,7 @@ void Browser::openStores(const QString& databasePath)
 {
     m_history = std::make_unique<HistoryStore>(databasePath);
     m_bookmarks = new BookmarkStore(databasePath, this);
-    setInternalApi(new InternalApi(m_history.get(), m_bookmarks, this));
+    setInternalApi(new InternalApi(m_history.get(), m_bookmarks, m_downloads, this));
     for (const auto& w : std::as_const(m_windows))
         if (w)
             w->setStores(m_history.get(), m_bookmarks);

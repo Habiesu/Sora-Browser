@@ -28,10 +28,13 @@ void translateActions(QWebEnginePage* page)
         {A::ViewSource, "Ver código fuente"}, {A::ExitFullScreen, "Salir de pantalla completa"}};
     for (const auto& [action, text] : texts)
         page->action(action)->setText(QString::fromUtf8(text));
-    // Descargas y herramientas de desarrollo aún no existen (Hito 6): estas opciones no harían nada.
-    for (auto action : {A::SavePage, A::DownloadLinkToDisk, A::DownloadImageToDisk, A::DownloadMediaToDisk,
-                        A::InspectElement})
-        page->action(action)->setVisible(false);
+    for (const auto& [action, text] : {std::pair{A::SavePage, "Guardar página como..."},
+                                        {A::DownloadLinkToDisk, "Descargar enlace"},
+                                        {A::DownloadImageToDisk, "Descargar imagen"},
+                                        {A::DownloadMediaToDisk, "Descargar vídeo o audio"}})
+        page->action(action)->setText(QString::fromUtf8(text));
+    // Inspeccionar necesita enlazar las herramientas de desarrollo a la pestaña: se abren con F12.
+    page->action(A::InspectElement)->setVisible(false);
 }
 } // namespace
 

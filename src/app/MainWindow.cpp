@@ -297,7 +297,9 @@ void MainWindow::runCommand(MainMenu::Command command)
     case C::Quit: qApp->closeAllWindows(); break;
     case C::AddBookmark: toggleBookmark(); break;
     case C::SavePage:
-        break; // marcadores y descargas: tareas siguientes del plan del Hito 3
+        if (Tab* t = currentTab())
+            t->page()->triggerAction(QWebEnginePage::SavePage); // DownloadManager pregunta dónde
+        break;
     }
 }
 
