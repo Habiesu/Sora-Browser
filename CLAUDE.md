@@ -16,7 +16,12 @@ el **rendimiento**: arrancar y responder al menos tan rápido como Chrome y gast
 
 ## Decisiones cerradas (no cambiarlas sin preguntar al usuario)
 
-- Motor: **Qt 6.12 + Qt WebEngine**, en **C++20** con **Qt Widgets** (nada de QML, HTML, Electron ni Tauri).
+- Motor: **CEF (Chromium Embedded Framework)**, siempre en la última versión estable (sigue a Chrome
+  estable). Decidido por el usuario el 21/11/2026: Qt WebEngine iba ~18 versiones de Chromium por detrás
+  (140 frente a 158) y YouTube cargaba ~0,9 s más lento que en Chrome; sin el último Chromium, Sora
+  queda por detrás en rendimiento y en seguridad. Plan: `docs/superpowers/plans/2026-11-21-hito-cef.md`.
+- Interfaz: **C++20** con **Qt Widgets** (pestañas, barra, menús, ventanas); CEF solo pinta las páginas.
+  Nada de QML, Electron ni Tauri.
 - Bloqueador: **adblock-rust de Brave**, en el crate `adblock-ffi/` (API C), enlazado con Corrosion.
 - Plataformas: **Windows 10/11 x64 primero**, Linux también. Android, más adelante y como app aparte.
 - **Instalador con autoactualización** (Inno Setup, por usuario, sin administrador); comprobación de
@@ -24,7 +29,7 @@ el **rendimiento**: arrancar y responder al menos tan rápido como Chrome y gast
 - Privacidad: **sin telemetría**; buscador por defecto **DuckDuckGo**; cookies de terceros bloqueadas;
   modo solo HTTPS; Safe Browsing mediante la Update API v4 (comprobación local).
 - Netflix/Crunchyroll (DRM Widevine): se intentará en un experimento; si falla, botón "Abrir en Edge".
-- Extensiones de Chrome: después de la versión 1 (Qt 6.10+ las soporta de forma experimental).
+- Extensiones de Chrome: con el motor de Chrome de CEF ("Chrome style").
 
 ## Compilar y probar
 
