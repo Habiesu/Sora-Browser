@@ -3,6 +3,8 @@
 #include <QPointer>
 #include <QVariantList>
 
+class QWebEngineProfile;
+
 namespace sora {
 
 class BookmarkStore;
@@ -33,6 +35,14 @@ public:
     Q_INVOKABLE void downloadAction(int id, const QString& action); // cancel|pause|resume|open|show
     Q_INVOKABLE void clearDownloads();
 
+    // Ajustes (ver Settings). setSetting no deja cambiar la carpeta de descargas: solo chooseDownloadFolder.
+    Q_INVOKABLE QVariantMap settings() const;
+    Q_INVOKABLE bool setSetting(const QString& key, const QVariant& value);
+    Q_INVOKABLE QString chooseDownloadFolder();
+    Q_INVOKABLE void clearBrowsingData(bool history, bool cookies, bool cache);
+    Q_INVOKABLE QVariantMap about() const;
+    void setProfiles(QList<QWebEngineProfile*> profiles) { m_profiles = profiles; }
+
 signals:
     void bookmarksChanged();
     void downloadsChanged();
@@ -41,6 +51,7 @@ private:
     HistoryStore* m_history;
     QPointer<BookmarkStore> m_bookmarks;
     QPointer<DownloadManager> m_downloads;
+    QList<QWebEngineProfile*> m_profiles;
 };
 
 } // namespace sora

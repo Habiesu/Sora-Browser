@@ -10,6 +10,8 @@
 #include <QPointer>
 #include <QWebChannel>
 
+#include "app/Settings.h"
+
 namespace sora {
 namespace {
 
@@ -43,7 +45,13 @@ public:
             return;
         }
         auto* buffer = new QBuffer(job);
-        buffer->setData(file.readAll());
+        QByteArray data = file.readAll();
+        if (resource.startsWith(QLatin1String(":/pages/newtab"))) { // el buscador elegido en Ajustes
+            const Settings& s = Settings::instance();
+            data.replace("https://duckduckgo.com/", s.searchAction().toUtf8());
+            data.replace("DuckDuckGo", s.searchName().toUtf8());
+        }
+        buffer->setData(data);
         const QByteArray mime = QMimeDatabase().mimeTypeForFile(resource, QMimeDatabase::MatchExtension).name().toUtf8();
         job->reply(mime == "text/html" ? QByteArrayLiteral("text/html;charset=utf-8") : mime, buffer);
     }

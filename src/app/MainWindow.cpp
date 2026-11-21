@@ -24,6 +24,7 @@
 #include <QWindow>
 
 #include "app/InternalPages.h"
+#include "app/Settings.h"
 #include "browser/Tab.h"
 #include "data/BookmarkStore.h"
 #include "data/HistoryStore.h"
@@ -62,11 +63,7 @@ QUrl urlFromInput(const QString& rawInput)
     if (!input.contains(QLatin1Char(' ')) && scheme.match(input).hasMatch())
         return QUrl(input);
 
-    QUrl search(QStringLiteral("https://duckduckgo.com/"));
-    QUrlQuery query;
-    query.addQueryItem(QStringLiteral("q"), input);
-    search.setQuery(query);
-    return search;
+    return Settings::instance().searchUrl(input);
 }
 
 namespace {

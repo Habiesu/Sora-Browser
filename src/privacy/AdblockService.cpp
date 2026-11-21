@@ -31,6 +31,8 @@ bool AdblockService::decide(const QUrl& url, const QUrl& firstParty,
     if (type == QWebEngineUrlRequestInfo::ResourceTypeMainFrame
         || type == QWebEngineUrlRequestInfo::ResourceTypeNavigationPreloadMainFrame)
         return false;
+    if (!m_enabled)
+        return false;
     const auto engine = m_engine.load();
     if (!engine)
         return false; // el motor aún se está cargando

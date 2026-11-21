@@ -3,10 +3,12 @@
 #include <QApplication>
 #include <QEvent>
 #include <QFileDialog>
+#include <QStyleHints>
 #include <QWebEngineProfile>
 
 #include "app/InternalApi.h"
 #include "app/InternalPages.h"
+#include "app/Settings.h"
 #include "app/MainWindow.h"
 #include "browser/DownloadManager.h"
 #include "browser/Tab.h"
@@ -25,6 +27,8 @@ Browser::Browser(QWebEngineProfile* profile, AdblockService* adblock, QObject* p
     , m_downloads(new DownloadManager(this))
 {
     m_downloads->attach(m_profile);
+    applySettings();
+    connect(&Settings::instance(), &Settings::changed, this, &Browser::applySettings);
     m_downloads->askSavePath = [this](const QString& suggested) {
         return QFileDialog::getSaveFileName(activeWindow(), tr("Guardar página como"), suggested,
                                             tr("Página web, un solo archivo (*.mhtml)"));
@@ -57,6 +61,9 @@ MainWindow* Browser::createWindow(bool incognito, bool startWithTab)
                 m_adblock->attach(m_incognito);
             installInternalPages(m_incognito);
             m_downloads->attach(m_incognito);
+            m_incognito->setDownloadPath(m_profile->downloadPath());
+            if (m_api)
+                m_api->setProfiles({m_profile, m_incognito});
         }
         profile = m_incognito;
     }
@@ -77,13 +84,31 @@ void Browser::openStores(const QString& databasePath)
 {
     m_history = std::make_unique<HistoryStore>(databasePath);
     m_bookmarks = new BookmarkStore(databasePath, this);
-    setInternalApi(new InternalApi(m_history.get(), m_bookmarks, m_downloads, this));
+    auto* api = new InternalApi(m_history.get(), m_bookmarks, m_downloads, this);
+    api->setProfiles({m_profile});
+    m_api = api;
+    setInternalApi(api);
     for (const auto& w : std::as_const(m_windows))
         if (w)
             w->setStores(m_history.get(), m_bookmarks);
 }
 
 Browser::~Browser() = default;
+
+void Browser::applySettings()
+{
+    const Settings& s = Settings::instance();
+    const QString theme = s.value(QStringLiteral("theme")).toString();
+    QGuiApplication::styleHints()->setColorScheme(theme == QLatin1String("dark")    ? Qt::ColorScheme::Dark
+                                                  : theme == QLatin1String("light") ? Qt::ColorScheme::Light
+                                                                                    : Qt::ColorScheme::Unknown);
+    if (m_adblock)
+        m_adblock->setEnabled(s.value(QStringLiteral("adblock")).toBool());
+    const QString downloads = s.value(QStringLiteral("downloadPath")).toString();
+    for (QWebEngineProfile* p : {m_profile, m_incognito})
+        if (p)
+            p->setDownloadPath(downloads);
+}
 
 QList<MainWindow*> Browser::windows() const
 {

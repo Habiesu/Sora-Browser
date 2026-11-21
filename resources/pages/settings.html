@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ajustes</title>
+<link rel="stylesheet" href="sora://res/sora.css">
+<link rel="icon" href="sora://res/sora.svg">
+<script src="sora://res/qwebchannel.js"></script>
+<script src="sora://res/sora.js"></script>
+<style>
+  main { max-width: 720px; margin: 0 auto; padding: 32px 24px 64px; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 20px; }
+  section { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px 18px; margin-bottom: 18px; scroll-margin-top: 16px; }
+  h2 { font-size: 15px; font-weight: 600; margin: 14px 0 2px; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+  h2 + .row, h2 + p + .row { border-top: none; }
+  .row > label:first-child, .row > span:first-child { flex: 1; }
+  .hint { color: var(--muted); font-size: 13px; margin: 0; }
+  select { background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
+  input[type=text] { width: 100%; padding: 6px 10px; }
+  .path { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
+  .checks { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; }
+  #cleared { color: var(--accent); font-size: 13px; }
+  #homepage-row[hidden] { display: none; }
+  #about p { margin: 12px 0; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Ajustes</h1>
+
+  <section id="buscador">
+    <h2>Buscador</h2>
+    <div class="row">
+      <label for="search">Buscador de la barra de direcciones y de la nueva pestaña</label>
+      <select id="search">
+        <option value="duckduckgo">DuckDuckGo</option>
+        <option value="brave">Brave Search</option>
+        <option value="startpage">Startpage</option>
+        <option value="google">Google</option>
+        <option value="bing">Bing</option>
+      </select>
+    </div>
+  </section>
+
+  <section id="inicio">
+    <h2>Al abrir Sora</h2>
+    <div class="row">
+      <label for="startup">Mostrar</label>
+      <select id="startup">
+        <option value="newtab">Una pestaña nueva</option>
+        <option value="homepage">Una página concreta</option>
+      </select>
+    </div>
+    <div class="row" id="homepage-row" hidden>
+      <input type="text" id="homepage" placeholder="https://..." aria-label="Página de inicio">
+    </div>
+  </section>
+
+  <section id="aspecto">
+    <h2>Aspecto</h2>
+    <div class="row">
+      <label for="theme">Tema</label>
+      <select id="theme">
+        <option value="system">Como el sistema</option>
+        <option value="light">Claro</option>
+        <option value="dark">Oscuro</option>
+      </select>
+    </div>
+  </section>
+
+  <section id="privacidad">
+    <h2>Privacidad</h2>
+    <div class="row">
+      <label for="adblock">Bloquear anuncios y rastreadores</label>
+      <input type="checkbox" id="adblock">
+    </div>
+  </section>
+
+  <section id="descargas">
+    <h2>Descargas</h2>
+    <div class="row">
+      <span>Carpeta</span>
+      <span class="path" id="downloadPath"></span>
+      <button id="chooseFolder">Cambiar</button>
+    </div>
+  </section>
+
+  <section id="borrar">
+    <h2>Borrar datos de navegación</h2>
+    <div class="checks">
+      <label><input type="checkbox" id="clear-history" checked> Historial</label>
+      <label><input type="checkbox" id="clear-cookies" checked> Cookies (se cerrará la sesión en las webs)</label>
+      <label><input type="checkbox" id="clear-cache" checked> Archivos en caché</label>
+    </div>
+    <div class="row">
+      <span id="cleared"></span>
+      <button class="primary" id="clearData">Borrar datos</button>
+    </div>
+  </section>
+
+  <section id="about">
+    <h2>Acerca de Sora</h2>
+    <p id="version"></p>
+  </section>
+</main>
+<script>
+  const $ = function (id) { return document.getElementById(id); };
+  onSora(function (s) {
+    s.settings(function (v) {
+      ['search', 'startup', 'theme'].forEach(function (k) { $(k).value = v[k]; });
+      $('homepage').value = v.homepage;
+      $('homepage-row').hidden = v.startup !== 'homepage';
+      $('adblock').checked = v.adblock;
+      $('downloadPath').textContent = v.downloadPath;
+      $('downloadPath').title = v.downloadPath;
+    });
+    s.about(function (a) {
+      $('version').textContent = 'Sora ' + a.version + ' · Qt WebEngine ' + a.qt + ' (Chromium ' + a.chromium + ')' +
+        ' · Bloqueo de anuncios: adblock-rust de Brave.';
+    });
+    ['search', 'startup', 'theme'].forEach(function (k) {
+      $(k).addEventListener('change', function () {
+        s.setSetting(k, $(k).value);
+        if (k === 'startup') $('homepage-row').hidden = $(k).value !== 'homepage';
+      });
+    });
+    $('homepage').addEventListener('change', function () {
+      let url = $('homepage').value.trim();
+      if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
+      s.setSetting('homepage', url, function (ok) {
+        $('homepage').setCustomValidity(ok ? '' : 'Escribe una dirección web válida');
+        $('homepage').reportValidity();
+        if (ok) $('homepage').value = url;
+      });
+    });
+    $('adblock').addEventListener('change', function () { s.setSetting('adblock', $('adblock').checked); });
+    $('chooseFolder').addEventListener('click', function () {
+      s.chooseDownloadFolder(function (path) { $('downloadPath').textContent = path; $('downloadPath').title = path; });
+    });
+    $('clearData').addEventListener('click', function () {
+      s.clearBrowsingData($('clear-history').checked, $('clear-cookies').checked, $('clear-cache').checked);
+      $('cleared').textContent = 'Listo: datos borrados.';
+    });
+  });
+  if (location.hash) document.querySelector(location.hash)?.scrollIntoView();
+</script>
+</body>
+</html>

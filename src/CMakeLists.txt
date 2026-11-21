@@ -4,6 +4,7 @@ add_library(sora_core STATIC
   app/Browser.h app/Browser.cpp
   app/InternalPages.h app/InternalPages.cpp
   app/InternalApi.h app/InternalApi.cpp
+  app/Settings.h app/Settings.cpp
   browser/Tab.h browser/Tab.cpp
   browser/TabManager.h browser/TabManager.cpp
   browser/DownloadManager.h browser/DownloadManager.cpp
@@ -38,6 +39,7 @@ qt_add_resources(sora_core "pages" PREFIX "/pages" BASE "${CMAKE_SOURCE_DIR}/res
   ${CMAKE_SOURCE_DIR}/resources/pages/history.html
   ${CMAKE_SOURCE_DIR}/resources/pages/bookmarks.html
   ${CMAKE_SOURCE_DIR}/resources/pages/downloads.html
+  ${CMAKE_SOURCE_DIR}/resources/pages/settings.html
   ${CMAKE_SOURCE_DIR}/resources/pages/res/sora.js
   ${CMAKE_SOURCE_DIR}/resources/pages/res/sora.css
   ${CMAKE_SOURCE_DIR}/resources/pages/res/sora.svg

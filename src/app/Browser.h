@@ -12,6 +12,7 @@ namespace sora {
 class AdblockService;
 class BookmarkStore;
 class DownloadManager;
+class InternalApi;
 class HistoryStore;
 class MainWindow;
 
@@ -47,8 +48,10 @@ private:
     std::unique_ptr<HistoryStore> m_history;
     BookmarkStore* m_bookmarks = nullptr;
     DownloadManager* m_downloads;
+    QPointer<InternalApi> m_api;
 
     MainWindow* createWindow(bool incognito, bool startWithTab);
+    void applySettings();
     void onTabDetachRequested(MainWindow* from, int index, QPoint globalPos);
 };
 

@@ -1,6 +1,13 @@
 #include "app/InternalApi.h"
 
+#include <QApplication>
+#include <QFileDialog>
 #include <QUrl>
+#include <QWebEngineCookieStore>
+#include <QWebEngineProfile>
+#include <QtWebEngineCore/qtwebenginecoreglobal.h>
+
+#include "app/Settings.h"
 
 #include "browser/DownloadManager.h"
 #include "data/BookmarkStore.h"
@@ -40,6 +47,45 @@ void InternalApi::downloadAction(int id, const QString& action)
         m_downloads->open(id);
     else if (action == QLatin1String("show"))
         m_downloads->showInFolder(id);
+}
+
+QVariantMap InternalApi::settings() const
+{
+    return Settings::instance().all();
+}
+
+bool InternalApi::setSetting(const QString& key, const QVariant& value)
+{
+    return key != QLatin1String("downloadPath") && Settings::instance().setValue(key, value);
+}
+
+QString InternalApi::chooseDownloadFolder()
+{
+    Settings& s = Settings::instance();
+    const QString dir = QFileDialog::getExistingDirectory(QApplication::activeWindow(), tr("Carpeta de descargas"),
+                                                          s.value(QStringLiteral("downloadPath")).toString());
+    if (!dir.isEmpty())
+        s.setValue(QStringLiteral("downloadPath"), dir);
+    return s.value(QStringLiteral("downloadPath")).toString();
+}
+
+void InternalApi::clearBrowsingData(bool history, bool cookies, bool cache)
+{
+    if (history && m_history)
+        m_history->clear();
+    for (QWebEngineProfile* p : std::as_const(m_profiles)) {
+        if (cookies)
+            p->cookieStore()->deleteAllCookies();
+        if (cache)
+            p->clearHttpCache();
+    }
+}
+
+QVariantMap InternalApi::about() const
+{
+    return {{QStringLiteral("version"), QCoreApplication::applicationVersion()},
+            {QStringLiteral("qt"), QString::fromLatin1(qVersion())},
+            {QStringLiteral("chromium"), QString::fromLatin1(qWebEngineChromiumVersion())}};
 }
 
 void InternalApi::clearDownloads()

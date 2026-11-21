@@ -5,6 +5,8 @@
 #include "app/InternalPages.h"
 #include "browser/Tab.h"
 #include "app/InternalApi.h"
+#include "app/MainWindow.h"
+#include "app/Settings.h"
 #include "browser/DownloadManager.h"
 #include "data/BookmarkStore.h"
 #include "data/HistoryStore.h"
@@ -113,6 +115,41 @@ private slots:
         sora::Page page(&profile);
         page.setUrl(QUrl("sora://downloads"));
         QTRY_VERIFY_WITH_TIMEOUT(runJs(page, "document.body.innerText").toString().contains("lobo.txt"), 8000);
+    }
+    void settingsPageChangesSearchEngine()
+    {
+        sora::Settings& settings = sora::Settings::instance();
+        settings.setValue("search", "duckduckgo");
+        sora::HistoryStore history(m_storage.filePath("p5.db"));
+        sora::BookmarkStore bookmarks(m_storage.filePath("p5.db"));
+        sora::InternalApi api(&history, &bookmarks);
+        sora::setInternalApi(&api);
+        sora::Page page(m_profile);
+        page.setUrl(QUrl("sora://settings"));
+        QTRY_COMPARE_WITH_TIMEOUT(runJs(page, "document.getElementById('search').value").toString(),
+                                  QString("duckduckgo"), 8000);
+        runJs(page, "const s = document.getElementById('search'); s.value = 'brave';"
+                    "s.dispatchEvent(new Event('change'))");
+        QTRY_COMPARE(settings.value("search").toString(), QString("brave"));
+        QCOMPARE(sora::urlFromInput("lobo gris").host(), QString("search.brave.com"));
+
+        QWebEnginePage newTab(m_profile);
+        newTab.setUrl(QUrl("sora://newtab"));
+        QTRY_COMPARE_WITH_TIMEOUT(runJs(newTab, "document.querySelector('form') && document.querySelector('form').action").toString(),
+                                  QString("https://search.brave.com/search"), 8000);
+        settings.setValue("search", "duckduckgo");
+    }
+    void settingsRejectBadValues()
+    {
+        // Lo que llega de una página no puede meter valores raros ni cambiar la carpeta de descargas.
+        sora::InternalApi api(nullptr, nullptr);
+        QVERIFY(!api.setSetting("search", "malvado"));
+        QVERIFY(!api.setSetting("homepage", "javascript:alert(1)"));
+        QVERIFY(!api.setSetting("downloadPath", m_storage.path()));
+        QVERIFY(!api.setSetting("otra", 1));
+        QVERIFY(api.setSetting("homepage", "https://lobos.test/"));
+        QCOMPARE(sora::Settings::instance().value("homepage").toString(), QString("https://lobos.test/"));
+        QVERIFY(api.setSetting("homepage", ""));
     }
     void webPagesDoNotGetTheBridge()
     {

@@ -21,6 +21,7 @@ public:
 
     // Sustituye el motor de forma atómica; nullptr = no bloquear nada.
     void setEngine(std::shared_ptr<const AdblockEngine> engine);
+    void setEnabled(bool enabled) { m_enabled = enabled; } // ajuste del usuario
     bool decide(const QUrl& url, const QUrl& firstParty, QWebEngineUrlRequestInfo::ResourceType type) const;
     // Pone el interceptor en el perfil: así se bloquea también lo que no sale de una página
     // (service workers). Cada bloqueo se avisa con blocked().
@@ -31,6 +32,7 @@ signals:
 
 private:
     std::atomic<std::shared_ptr<const AdblockEngine>> m_engine;
+    std::atomic<bool> m_enabled{true};
 };
 
 } // namespace sora

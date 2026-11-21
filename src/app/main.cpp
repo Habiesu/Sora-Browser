@@ -11,6 +11,7 @@
 #include "app/Browser.h"
 #include "app/InternalPages.h"
 #include "app/MainWindow.h"
+#include "app/Settings.h"
 #include "browser/Tab.h"
 #include "privacy/AdblockService.h"
 #include "privacy/FilterListStore.h"
@@ -106,8 +107,12 @@ int main(int argc, char* argv[])
         }, Qt::SingleShotConnection);
     }
 
+    const sora::Settings& settings = sora::Settings::instance();
     if (!positional.isEmpty())
         window->navigate(positional.first());
+    else if (settings.value(QStringLiteral("startup")) == QStringLiteral("homepage")
+             && !settings.value(QStringLiteral("homepage")).toString().isEmpty())
+        window->navigate(settings.value(QStringLiteral("homepage")).toString());
 
     // Historial y marcadores, justo después de mostrar la ventana (no frenan el arranque).
     QTimer::singleShot(0, &browser, [&browser] {
