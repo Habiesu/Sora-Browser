@@ -64,6 +64,11 @@ Medir contra Chrome: `powershell -ExecutionPolicy Bypass -File bench\bench.ps1 -
   (`bench/results/2026-11-20-hito2.md`). Pendiente de probar a mano por el usuario: Snap Layouts al
   pasar sobre maximizar, arrastrar y redimensionar con el ratón.
   Si Sora deja de igualar a Chrome en arranque o memoria con una pestaña, parar y hablarlo con el usuario.
-- **Siguientes:** 3 Historial, marcadores, sesión · 4 Privacidad (escudo,
+- **Hito 3 (paridad con Chrome):** hecho (plan `docs/superpowers/plans/2026-11-21-hito3-paridad-chrome.md`).
+  Historial, marcadores, descargas, ajustes, extensiones, menú principal, ventanas e incógnito,
+  predicción en la barra y anuncios de YouTube. Las páginas internas son HTML en `sora://` con
+  QWebChannel (`InternalApi`); el marco de la ventana sigue en Qt Widgets. Arranque y memoria ≤ Chrome
+  (`bench/results/2026-11-21-hito3.md`). Pendiente: restaurar la sesión al abrir.
+- **Siguientes:** 4 Privacidad (escudo,
   HTTPS, cookies, Safe Browsing, listas diarias) · 5 Pestañas dormidas · 6 Descargas, modo privado,
   ajustes · 7 Instalador con autoactualización · Experimento DRM.

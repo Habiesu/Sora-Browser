@@ -4,8 +4,8 @@ Lista viva de cosas vistas al trabajar en Sora que no son urgentes. Al hacer una
 
 ## Rendimiento
 
-- **Chrome carga la página antes que Sora** (medido con `bench.ps1` el 20/11/2026: ~800 ms frente
-  a ~720 ms desde el lanzamiento; el arranque y la memoria sí favorecen a Sora). Sospechosos, por
+- **Chrome carga la página antes que Sora** (medido con `bench.ps1`: ~800 frente a ~720 ms el 20/11/2026 y
+  ~900 frente a ~810 ms el 21/11/2026; el arranque y la memoria sí favorecen a Sora). Sospechosos, por
   orden: el `FilterListStore` leyendo y compilando las listas de bloqueo a la vez que carga la
   primera página (compite por CPU), el interceptor en cada petición y el perfil de Sora con caché
   frente al de Chrome. Para saberlo: medir con las listas desactivadas y con el interceptor vacío.
@@ -14,6 +14,15 @@ Lista viva de cosas vistas al trabajar en Sora que no son urgentes. Al hacer una
   de toda la ventana antes de `show()` y crear los iconos al arrancar. Medir con `sora --bench`.
 
 ## Limitaciones conocidas
+
+- **El tema elegido en Ajustes no cambia al momento las páginas abiertas**: la ventana sí, pero las
+  webs y las páginas `sora://` toman el tema nuevo al recargar (Chrome lo aplica al instante).
+- **La lista de descargas se pierde al cerrar Sora** (vive en memoria; guardarla en `sora.db`).
+- **La barra libre para arrastrar la ventana es estrecha** con muchas pestañas (entre «+» y
+  minimizar); Chrome deja siempre un hueco mínimo.
+- **El icono del puzle** se parece a una nube a 16 px; redibujarlo.
+- **Al cambiar a otra pestaña desde la barra**, la nueva pestaña vacía se queda abierta (Chrome la
+  cierra).
 
 - **Los bloqueos se reparten por sitio** (el perfil no sabe de qué pestaña viene cada petición):
   con el mismo sitio en dos pestañas de fondo, se los lleva la primera.
@@ -24,8 +33,12 @@ Lista viva de cosas vistas al trabajar en Sora que no son urgentes. Al hacer una
 
 - **Linux:** la ventana sin marco (franja de 4 px para redimensionar, `startSystemMove`) no se ha
   compilado ni probado; solo hay Windows en este PC.
-- **A mano en Windows:** el panel de Snap Layouts al pasar sobre maximizar, arrastrar, doble clic
-  en la barra y redimensionar con el ratón.
+- **A mano en Windows:** el panel de Snap Layouts al pasar sobre maximizar y redimensionar desde
+  los bordes. (Arrastrar, doble clic en el borde superior, menú con clic derecho y Win+flechas ya
+  se probaron el 21/11/2026.)
+- **YouTube:** probado con un vídeo sin anuncio ni aviso antibloqueo. Las reglas son propias
+  (`resources/adblock/youtube.js`); si YouTube cambia, actualizarlas o pasar a los scriptlets de
+  uBlock Origin desde adblock-rust (`use_resources`) cuando haya una fuente descargable.
 
 ## Compilación en Windows
 
