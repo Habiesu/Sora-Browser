@@ -28,7 +28,16 @@ Browser::Browser(QWebEngineProfile* profile, AdblockService* adblock, QObject* p
 {
     m_downloads->attach(m_profile);
     applySettings();
-    connect(&Settings::instance(), &Settings::changed, this, &Browser::applySettings);
+    connect(&Settings::instance(), &Settings::changed, this, [this](const QString& key) {
+        applySettings();
+        // Chromium solo toma el tema nuevo al cargar: las páginas de Sora se recargan (no pierden nada);
+        // las webs lo toman en su próxima carga. shortcut: buscar cómo avisar a Chromium al momento.
+        if (key == QLatin1String("theme"))
+            for (const auto& w : std::as_const(m_windows))
+                for (int i = 0; w && i < w->tabs()->count(); ++i)
+                    if (Tab* t = w->tabs()->tab(i); t->url().scheme() == QLatin1String("sora"))
+                        t->reload();
+    });
     m_downloads->askSavePath = [this](const QString& suggested) {
         return QFileDialog::getSaveFileName(activeWindow(), tr("Guardar página como"), suggested,
                                             tr("Página web, un solo archivo (*.mhtml)"));

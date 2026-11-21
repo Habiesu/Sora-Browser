@@ -218,7 +218,13 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
         m_suggestTimer->start();
     });
     connect(m_toolbar->omnibox(), &Omnibox::tabRequested, this, [this](int index) {
+        // Como Chrome: si se venía de una pestaña nueva vacía, se cierra al cambiar.
+        Tab* from = currentTab();
+        const bool emptyNewTab = from && from->url().toString().startsWith(QLatin1String("sora://newtab"));
         m_tabs->setCurrentIndex(index);
+        for (int i = 0; emptyNewTab && i < m_tabs->count(); ++i)
+            if (m_tabs->tab(i) == from)
+                m_tabs->closeTab(i);
         if (auto* t = currentTab())
             t->setFocus();
     });

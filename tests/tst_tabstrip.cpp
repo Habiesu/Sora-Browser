@@ -248,6 +248,8 @@ private slots:
         for (int i = 0; i < 30; ++i)
             bar.addTab("x");
         QVERIFY(bar.rect().contains(plusOf(bar)->geometry()));
+        // Con muchas pestañas queda barra libre para arrastrar la ventana, como en Chrome.
+        QVERIFY(bar.width() - plusOf(bar)->geometry().right() >= 40);
     }
 };
 

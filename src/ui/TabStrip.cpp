@@ -15,7 +15,8 @@ constexpr int kMinTab = 60;
 constexpr int kMaxTab = 220;
 constexpr int kPlusSize = 32; // casi el alto de la pestaña visible (34), como en Chrome
 constexpr int kPlusGap = 4;
-constexpr int kPlusReserve = kPlusSize + 2 * kPlusGap;
+constexpr int kDragGap = 48; // como en Chrome: siempre queda barra libre para arrastrar la ventana
+constexpr int kPlusReserve = kPlusSize + 2 * kPlusGap + kDragGap;
 constexpr int kTabTopMargin = 6; // hueco sobre la pestaña: se ve la barra de título
 constexpr int kTabHeight = 40;
 constexpr int kDetachDistance = 30; // px fuera de la tira para sacar la pestaña
@@ -135,7 +136,7 @@ void TabStrip::applyPalette(const Palette& p)
 
 QSize TabStrip::tabSizeHint(int index) const
 {
-    const int available = width() - kPlusSize - 2 * kPlusGap;
+    const int available = width() - kPlusReserve;
     const int each = count() ? available / count() : kMaxTab;
     Q_UNUSED(index);
     return {std::clamp(each, kMinTab, kMaxTab), kTabHeight};
@@ -246,7 +247,7 @@ void TabStrip::placePlus(int draggedRight)
     // en el hueco reservado tras las flechas.
     const int lastRight = count() ? std::max(tabRect(count() - 1).right(), draggedRight) : -1;
     int x = lastRight + 1 + kPlusGap;
-    x = std::clamp(x, 0, std::max(0, width() - kPlusSize - kPlusGap));
+    x = std::clamp(x, 0, std::max(0, width() - kPlusSize - kPlusGap - kDragGap));
     // Centrado en la parte visible de la pestaña (bajo el hueco de la barra de título).
     m_plus->move(x, kTabTopMargin + (height() - kTabTopMargin - kPlusSize) / 2);
     m_plus->raise();
