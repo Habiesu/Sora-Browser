@@ -1,5 +1,8 @@
 # Mejoras pendientes
 
+> **Siguiente gran tarea (pedida por el usuario el 21/11/2026):** cuando estas mejoras funcionen y el
+> usuario las haya probado, optimizar Sora a fondo (arranque, carga de páginas, memoria, CPU).
+
 Lista viva de cosas vistas al trabajar en Sora que no son urgentes. Al hacer una, se borra de aquí.
 
 ## Rendimiento
@@ -15,24 +18,8 @@ Lista viva de cosas vistas al trabajar en Sora que no son urgentes. Al hacer una
 
 ## Limitaciones conocidas
 
-- **El tema elegido en Ajustes no cambia al momento las páginas abiertas**: la ventana sí, pero las
-  webs y las páginas `sora://` toman el tema nuevo al recargar (Chrome lo aplica al instante).
-- **La lista de descargas se pierde al cerrar Sora** (vive en memoria; guardarla en `sora.db`).
-- **La barra libre para arrastrar la ventana es estrecha** con muchas pestañas (entre «+» y
-  minimizar); Chrome deja siempre un hueco mínimo.
-- **El botón «+» no sigue a las pestañas al arrastrarlas**: mientras se arrastra una pestaña, el «+»
-  se queda quieto en su sitio; solo se recoloca junto a la última pestaña al abrir otra. En Chrome
-  va siempre pegado a la última pestaña, también durante el arrastre.
-- **El botón «+» se ve mal**: no está bien alineado con las pestañas y su resaltado al pasar el ratón
-  queda feo. En Chrome y Brave es un círculo centrado en la altura de la pestaña, con un resaltado
-  de casi el mismo alto que la pestaña.
-- **El escudo verde no hace nada al pulsarlo**: debería abrir un panel como el de Brave Shields,
-  con el número de anuncios y rastreadores bloqueados en esa página y un interruptor para desactivar
-  el bloqueador solo en ese sitio (se recarga la página y Sora lo recuerda), más un enlace a Ajustes.
-- **El icono del puzle** se parece a una nube a 16 px; redibujarlo.
-- **Al cambiar a otra pestaña desde la barra**, la nueva pestaña vacía se queda abierta (Chrome la
-  cierra).
-
+- **Las webs abiertas no cambian de tema al momento** al cambiarlo en Ajustes: las páginas de Sora
+  se recargan solas, las webs lo toman en su próxima carga (Chrome lo aplica al instante).
 - **Los bloqueos se reparten por sitio** (el perfil no sabe de qué pestaña viene cada petición):
   con el mismo sitio en dos pestañas de fondo, se los lleva la primera.
 - **Instaladores 0.1.0 antiguos** no comprueban la versión: si se ejecuta uno de esos, aún puede
