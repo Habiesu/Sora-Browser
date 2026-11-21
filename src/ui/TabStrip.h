@@ -26,10 +26,12 @@ protected:
     void tabLayoutChange() override;
     void resizeEvent(QResizeEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
+    void paintEvent(QPaintEvent* event) override;
 
 private:
     QToolButton* m_plus;
     QColor m_closeColor;
+    QColor m_lineColor;
     void placePlus();
 };
 

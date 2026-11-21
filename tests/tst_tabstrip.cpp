@@ -92,6 +92,26 @@ private slots:
         bar.setPageIcon(0, QIcon()); // la web se queda sin favicon
         QVERIFY(!bar.tabIcon(0).isNull());
     }
+    void separatorsBetweenInactiveTabs()
+    {
+        const sora::Palette p = sora::nieblaPalette(Qt::ColorScheme::Dark);
+        QWidget host;
+        host.setStyleSheet(sora::nieblaStyleSheet(p));
+        TabStrip bar(&host);
+        bar.applyPalette(p);
+        bar.addTab("A"); bar.addTab("B"); bar.addTab("C");
+        bar.setCurrentIndex(2);
+        host.resize(1200, 40);
+        bar.resize(1200, 40);
+        host.show();
+        const QImage img = bar.grab().toImage();
+        const qreal dpr = img.devicePixelRatio();
+        const auto colorAt = [&](int x, int y) { return QColor(img.pixel(QPoint(x, y) * dpr)).name(); };
+        const int y = bar.tabRect(0).center().y() + 3;
+        // Entre A y B (ninguna activa): línea. Entre B y C (C activa): sin línea, como Chrome.
+        QCOMPARE(colorAt(bar.tabRect(0).right(), y), p.line.name());
+        QVERIFY(colorAt(bar.tabRect(1).right(), y) != p.line.name());
+    }
     void closeButtonIsVerticallyCentered()
     {
         const sora::Palette p = sora::nieblaPalette(Qt::ColorScheme::Dark);

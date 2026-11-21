@@ -1,6 +1,7 @@
 #include "ui/TabStrip.h"
 
 #include <QMouseEvent>
+#include <QPainter>
 #include <QProxyStyle>
 #include <QToolButton>
 
@@ -33,6 +34,7 @@ TabStrip::TabStrip(QWidget* parent)
     : QTabBar(parent)
     , m_plus(new QToolButton(this))
     , m_closeColor(nieblaPalette(Qt::ColorScheme::Light).faintText)
+    , m_lineColor(nieblaPalette(Qt::ColorScheme::Light).line)
 {
     setExpanding(false);
     setDrawBase(false);
@@ -54,9 +56,25 @@ TabStrip::TabStrip(QWidget* parent)
     connect(m_plus, &QToolButton::clicked, this, &TabStrip::newTabRequested);
 }
 
+void TabStrip::paintEvent(QPaintEvent* event)
+{
+    QTabBar::paintEvent(event);
+    // Separadores como en Chrome: solo entre dos pestañas que no son la activa.
+    QPainter painter(this);
+    painter.setPen(m_lineColor);
+    for (int i = 0; i + 1 < count(); ++i) {
+        if (i == currentIndex() || i + 1 == currentIndex())
+            continue;
+        const QRect r = tabRect(i);
+        painter.drawLine(r.right(), r.top() + kTabTopMargin + 8, r.right(), r.bottom() - 8);
+    }
+}
+
 void TabStrip::applyPalette(const Palette& p)
 {
     m_closeColor = p.faintText;
+    m_lineColor = p.line;
+    update();
     m_plus->setIcon(icon(Icon::Plus, p.mutedText));
     for (int i = 0; i < count(); ++i) {
         if (auto* b = qobject_cast<QToolButton*>(tabButton(i, RightSide)))
