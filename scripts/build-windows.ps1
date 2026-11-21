@@ -1,11 +1,12 @@
-﻿<#
+<#
 .SYNOPSIS
   Compila Sora en Windows y genera el instalador en dist\.
 
 .DESCRIPTION
   Requisitos (se comprueban al empezar): Visual Studio 2022 Build Tools con C++, CMake, Ninja,
   Rust (rustup, toolchain MSVC), Python 3, Inno Setup 6 y Git.
-  Qt 6.12.0 (msvc2022_64 + qtwebengine) se descarga con scripts\fetch-qt.py en .\.qt si no existe.
+  Qt 6.12.0 (msvc2022_64) se descarga con scripts\fetch-qt.py en .\.qt y CEF (motor web) con
+  scripts\fetch-cef.py en .\.cef, si no existen.
 #>
 param(
     [string]$QtVersion = "6.12.0",
@@ -47,13 +48,21 @@ if (-not (Test-Path $iscc)) { throw "Falta Inno Setup 6." }
 
 # Qt
 if (-not $QtDir) { $QtDir = Join-Path $root ".qt\$QtVersion\msvc2022_64" }
-if (-not (Test-Path "$QtDir\bin\Qt6WebEngineCore.dll")) {
+if (-not (Test-Path "$QtDir\bin\Qt6Widgets.dll")) {
     Require python "Instala Python 3."
     python -m pip install --user --quiet py7zr
     if ($LASTEXITCODE) { throw "No se pudo instalar py7zr." }
     python (Join-Path $PSScriptRoot "fetch-qt.py") $QtVersion $QtDir
     if ($LASTEXITCODE) { throw "No se pudo descargar Qt $QtVersion." }
 }
+
+# CEF (última estable)
+if (-not (Test-Path (Join-Path $root ".cef\current.txt"))) {
+    Require python "Instala Python 3."
+    python (Join-Path $PSScriptRoot "fetch-cef.py") (Join-Path $root ".cef")
+    if ($LASTEXITCODE) { throw "No se pudo descargar CEF." }
+}
+$cef = Join-Path $root (".cef\" + (Get-Content (Join-Path $root ".cef\current.txt")).Trim())
 
 # Compilar y probar
 cmake -S . -B build-win -G Ninja -DCMAKE_BUILD_TYPE=Release "-DCMAKE_PREFIX_PATH=$QtDir"
@@ -71,13 +80,17 @@ $stage = Join-Path $root "dist\Sora"
 if (Test-Path $stage) { Remove-Item -Recurse -Force $stage }
 New-Item -ItemType Directory -Force -Path $stage | Out-Null
 # qt_standard_project_setup() deja los .exe en la raíz del build en Windows
-Copy-Item "build-win\sora.exe" $stage
+Copy-Item "build-win\sora.exe", "build-win\sora-helper.exe" $stage
 & "$QtDir\bin\windeployqt.exe" --release --no-translations --no-system-d3d-compiler --no-opengl-sw --no-compiler-runtime "$stage\sora.exe"
 if ($LASTEXITCODE) { throw "Falló windeployqt." }
-# windeployqt (con --no-translations) solo deja el inglés: sin esto, las páginas de error de Chromium
-# y los menús de Qt (clic derecho en la web) salen en inglés.
-Copy-Item "$QtDir\translations\qtwebengine_locales\es*.pak" "$stage\translations\qtwebengine_locales"
-Copy-Item "$QtDir\translations\qtbase_es.qm", "$QtDir\translations\qtwebengine_es.qm" "$stage\translations"
+# windeployqt (con --no-translations) solo deja el inglés: los diálogos de Qt, en español.
+New-Item -ItemType Directory -Force -Path "$stage\translations" | Out-Null
+Copy-Item "$QtDir\translations\qtbase_es.qm" "$stage\translations"
+# Motor web (CEF): binarios y recursos junto a sora.exe. De los idiomas de Chromium, español e inglés.
+Get-ChildItem "$cef\Release" -File | Where-Object { $_.Extension -in '.dll', '.bin', '.json' } | Copy-Item -Destination $stage
+Copy-Item "$cef\Resources\*.pak", "$cef\Resources\icudtl.dat" $stage
+New-Item -ItemType Directory -Force -Path "$stage\locales" | Out-Null
+Copy-Item "$cef\Resources\locales\es*.pak", "$cef\Resources\locales\en-US*.pak" "$stage\locales"
 # Runtime de C++ junto a sora.exe: así funciona en PCs sin "Visual C++ Redistributable"
 # y sin pedir permisos de administrador.
 $crt = Get-ChildItem -Directory "$env:VCToolsRedistDir\x64" -Filter "Microsoft.VC*.CRT" | Select-Object -First 1
