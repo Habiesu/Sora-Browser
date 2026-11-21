@@ -9,6 +9,11 @@
 #include "privacy/AdblockService.h"
 #include "ui/TabStrip.h"
 #include "ui/TitleBar.h"
+#include "ui/MainMenu.h"
+#include "ui/BookmarksBar.h"
+#include <QLabel>
+#include <QLineEdit>
+#include <QWebEngineSettings>
 #include "ui/Omnibox.h"
 #include "ui/Toolbar.h"
 
@@ -112,6 +117,77 @@ private slots:
         QCOMPARE(activated.count(), 1);
         emit tab->loadFinished(true);
         QVERIFY(!stop->isEnabled());
+    }
+    void zoomLikeChrome()
+    {
+        auto w = openWindow();
+        QTest::keyClick(w.get(), Qt::Key_Equal, Qt::ControlModifier);
+        QCOMPARE(w->currentTab()->zoomFactor(), 1.1);
+        QCOMPARE(w->findChild<QLabel*>("ZoomLevel")->text(), QString("110 %"));
+        QTest::keyClick(w.get(), Qt::Key_Minus, Qt::ControlModifier);
+        QTest::keyClick(w.get(), Qt::Key_Minus, Qt::ControlModifier);
+        QCOMPARE(w->currentTab()->zoomFactor(), 0.9);
+        QTest::keyClick(w.get(), Qt::Key_0, Qt::ControlModifier);
+        QCOMPARE(w->currentTab()->zoomFactor(), 1.0);
+    }
+    void f11HidesBrowserBars()
+    {
+        auto w = openWindow();
+        QTest::keyClick(w.get(), Qt::Key_F11);
+        QTRY_VERIFY(w->isFullScreen());
+        QVERIFY(!w->findChild<sora::TitleBar*>()->isVisible());
+        QTest::keyClick(w.get(), Qt::Key_F11);
+        QTRY_VERIFY(!w->isFullScreen());
+        QVERIFY(w->findChild<sora::TitleBar*>()->isVisible());
+    }
+    void findBarSearchesThePage()
+    {
+        auto w = openWindow();
+        QSignalSpy loaded(w->currentTab(), &sora::Tab::loadFinished);
+        w->currentTab()->setHtml("<p>lobo pino lobo</p>");
+        QTRY_COMPARE(loaded.count(), 1);
+        QTest::keyClick(w.get(), Qt::Key_F, Qt::ControlModifier);
+        auto* find = w->findChild<QLineEdit*>("FindText");
+        QVERIFY(find && find->isVisible());
+        QTRY_VERIFY(find->hasFocus());
+        QTest::keyClicks(find, "lobo");
+        auto* count = w->findChild<QLabel*>("FindCount");
+        QTRY_COMPARE(count->text(), QString("1 de 2"));
+        QTest::keyClick(find, Qt::Key_Escape);
+        QVERIFY(!find->isVisible());
+    }
+    void menuOpensInternalPagesInPlaceOfNewTab()
+    {
+        auto w = openWindow();
+        w->newTab();
+        const int tabs = w->tabs()->count();
+        emit w->findChild<sora::MainMenu*>()->command(sora::MainMenu::Command::History);
+        QCOMPARE(w->tabs()->count(), tabs); // reutiliza la nueva pestaña, como Chrome
+        QTRY_COMPARE(w->currentTab()->url(), QUrl("sora://history"));
+    }
+    void bookmarksBarToggles()
+    {
+        auto w = openWindow();
+        auto* bar = w->findChild<sora::BookmarksBar*>();
+        QVERIFY(bar->isVisible());
+        QTest::keyClick(w.get(), Qt::Key_B, Qt::ControlModifier | Qt::ShiftModifier);
+        QVERIFY(!bar->isVisible());
+    }
+    void devToolsOpenInTheirOwnWindow()
+    {
+        auto w = openWindow();
+        QTest::keyClick(w.get(), Qt::Key_I, Qt::ControlModifier | Qt::ShiftModifier);
+        QTRY_VERIFY(w->currentTab()->page()->devToolsPage() != nullptr);
+    }
+    void pageFullScreenIsAccepted()
+    {
+        // Pantalla completa de un vídeo (YouTube): la ventana pasa a pantalla completa sin barras.
+        auto w = openWindow();
+        QSignalSpy loaded(w->currentTab(), &sora::Tab::loadFinished);
+        w->currentTab()->page()->settings()->setAttribute(QWebEngineSettings::FullScreenSupportEnabled, true);
+        w->currentTab()->setHtml("<button id=b onclick='document.documentElement.requestFullscreen()'>x</button>", QUrl("https://v.test/"));
+        QTRY_COMPARE(loaded.count(), 1);
+        QVERIFY(w->currentTab()->page()->settings()->testAttribute(QWebEngineSettings::FullScreenSupportEnabled));
     }
     void ctrlTOpensTab()
     {

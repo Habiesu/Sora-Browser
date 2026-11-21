@@ -12,6 +12,8 @@ add_library(sora_core STATIC
   ui/TitleBar.h ui/TitleBar.cpp
   ui/Omnibox.h ui/Omnibox.cpp
   ui/Toolbar.h ui/Toolbar.cpp
+  ui/MainMenu.h ui/MainMenu.cpp
+  ui/FindBar.h ui/FindBar.cpp
   ui/BookmarksBar.h ui/BookmarksBar.cpp
   privacy/AdblockEngine.h privacy/AdblockEngine.cpp
   privacy/AdblockService.h privacy/AdblockService.cpp
@@ -19,7 +21,7 @@ add_library(sora_core STATIC
   privacy/FilterListStore.h privacy/FilterListStore.cpp
 )
 target_include_directories(sora_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(sora_core PUBLIC Qt6::Widgets Qt6::Network Qt6::WebEngineWidgets Qt6::Concurrent sora_adblock)
+target_link_libraries(sora_core PUBLIC Qt6::Widgets Qt6::Network Qt6::WebEngineWidgets Qt6::Concurrent Qt6::PrintSupport sora_adblock)
 if(WIN32)
   target_link_libraries(sora_core PUBLIC dwmapi user32)
 endif()

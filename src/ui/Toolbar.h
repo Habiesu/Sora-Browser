@@ -6,6 +6,7 @@ class QToolButton;
 
 namespace sora {
 
+class MainMenu;
 class Omnibox;
 
 // Barra de herramientas Niebla: atrás, adelante, recargar/parar, dirección, escudo, estrella, menú.
@@ -15,6 +16,7 @@ public:
     explicit Toolbar(QWidget* parent = nullptr);
 
     Omnibox* omnibox() const { return m_omnibox; }
+    MainMenu* mainMenu() const { return m_mainMenu; }
     void setNavigation(bool canBack, bool canForward, bool loading);
     void setBlockedCount(int count);
     void applyPalette(const Palette& p);
@@ -24,9 +26,6 @@ signals:
     void forwardRequested();
     void reloadRequested();
     void stopRequested();
-    void newTabRequested();
-    void closeTabRequested();
-    void quitRequested();
 
 private:
     QToolButton* m_back;
@@ -36,6 +35,7 @@ private:
     QToolButton* m_shield;
     QToolButton* m_star;
     QToolButton* m_menu;
+    MainMenu* m_mainMenu;
     Palette m_palette;
     bool m_loading = false;
     void refreshIcons();

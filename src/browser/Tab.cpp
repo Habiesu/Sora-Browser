@@ -54,6 +54,7 @@ Tab::Tab(QWebEngineProfile* profile, QWidget* parent)
     : QWebEngineView(parent)
 {
     setPage(new Page(profile, this));
+    settings()->setAttribute(QWebEngineSettings::FullScreenSupportEnabled, true); // vídeos a pantalla completa
     translateActions(page());
     connect(this, &QWebEngineView::loadFinished, this, [this] { m_loading = false; });
     connect(this, &QWebEngineView::loadStarted, this, [this] {

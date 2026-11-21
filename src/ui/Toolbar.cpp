@@ -5,6 +5,7 @@
 #include <QToolButton>
 
 #include "ui/Icons.h"
+#include "ui/MainMenu.h"
 #include "ui/Omnibox.h"
 
 namespace sora {
@@ -28,7 +29,7 @@ Toolbar::Toolbar(QWidget* parent)
     , m_omnibox(new Omnibox(this))
     , m_shield(toolButton(this, {}))
     , m_star(toolButton(this, tr("Marcadores: llegan en el próximo hito")))
-    , m_menu(toolButton(this, tr("Menú")))
+    , m_menu(toolButton(this, tr("Personaliza y controla Sora")))
     , m_palette(nieblaPalette(Qt::ColorScheme::Light))
 {
     setObjectName(QStringLiteral("Toolbar"));
@@ -41,12 +42,8 @@ Toolbar::Toolbar(QWidget* parent)
     m_shield->setMaximumWidth(QWIDGETSIZE_MAX);
     m_star->setEnabled(false);
 
-    auto* menu = new QMenu(this);
-    menu->addAction(tr("Nueva pestaña\tCtrl+T"), this, &Toolbar::newTabRequested);
-    menu->addAction(tr("Cerrar pestaña\tCtrl+W"), this, &Toolbar::closeTabRequested);
-    menu->addSeparator();
-    menu->addAction(tr("Salir"), this, &Toolbar::quitRequested);
-    m_menu->setMenu(menu);
+    m_mainMenu = new MainMenu(this);
+    m_menu->setMenu(m_mainMenu);
     m_menu->setPopupMode(QToolButton::InstantPopup);
 
     auto* layout = new QHBoxLayout(this);

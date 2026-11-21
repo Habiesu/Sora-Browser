@@ -1,6 +1,13 @@
 #include "app/MainWindow.h"
 
 #include <QApplication>
+#include <QMessageBox>
+#include <QPointer>
+#include <QPrintDialog>
+#include <QPrinter>
+#include <QWebEngineFindTextResult>
+#include <QWebEngineFullScreenRequest>
+#include <QtWebEngineCore/qtwebenginecoreglobal.h>
 #include <QLabel>
 #include <QMouseEvent>
 #include <QRegularExpression>
@@ -20,6 +27,7 @@
 #include "browser/Tab.h"
 #include "browser/TabManager.h"
 #include "ui/BookmarksBar.h"
+#include "ui/FindBar.h"
 #include "ui/Omnibox.h"
 #include "ui/TabStrip.h"
 #include "ui/Theme.h"
@@ -82,6 +90,7 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
     , m_stack(new QStackedWidget(this))
     , m_tabs(new TabManager(profile, adblock, m_stack, this))
     , m_linkPreview(new QLabel(m_stack))
+    , m_findBar(new FindBar(m_stack))
     , m_incognito(profile->isOffTheRecord())
 {
 #ifdef Q_OS_WIN
@@ -112,6 +121,20 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
     m_linkPreview->setObjectName(QStringLiteral("LinkPreview"));
     m_linkPreview->setAttribute(Qt::WA_TransparentForMouseEvents);
     m_linkPreview->hide();
+    connect(m_findBar, &FindBar::findRequested, this, [this](const QString& text, bool backward) {
+        if (Tab* t = currentTab())
+            t->findText(text, backward ? QWebEnginePage::FindBackward : QWebEnginePage::FindFlags(),
+                        [bar = QPointer<FindBar>(m_findBar)](const QWebEngineFindTextResult& r) {
+                            if (bar)
+                                bar->setResult(r.activeMatch(), r.numberOfMatches());
+                        });
+    });
+    connect(m_findBar, &FindBar::closed, this, [this] {
+        if (Tab* t = currentTab()) {
+            t->findText(QString()); // quita el resaltado
+            t->setFocus();
+        }
+    });
 
     TabStrip* strip = m_titleBar->tabs();
     connect(m_tabs, &TabManager::tabInserted, this, [this, strip](int index) {
@@ -161,9 +184,7 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
     connect(m_toolbar, &Toolbar::forwardRequested, this, [this] { if (auto* t = currentTab()) t->forward(); });
     connect(m_toolbar, &Toolbar::reloadRequested, this, [this] { if (auto* t = currentTab()) t->reload(); });
     connect(m_toolbar, &Toolbar::stopRequested, this, [this] { if (auto* t = currentTab()) t->stop(); });
-    connect(m_toolbar, &Toolbar::newTabRequested, this, &MainWindow::newTab);
-    connect(m_toolbar, &Toolbar::closeTabRequested, this, [this] { m_tabs->closeTab(m_tabs->currentIndex()); });
-    connect(m_toolbar, &Toolbar::quitRequested, this, &QWidget::close);
+    connect(m_toolbar->mainMenu(), &MainMenu::command, this, &MainWindow::runCommand);
     connect(m_toolbar->omnibox(), &Omnibox::submitted, this, [this](const QString& text) {
         navigate(text);
         if (auto* t = currentTab())
@@ -228,6 +249,143 @@ void MainWindow::newTab()
     m_toolbar->omnibox()->setFocus(Qt::ShortcutFocusReason);
 }
 
+void MainWindow::runCommand(MainMenu::Command command)
+{
+    using C = MainMenu::Command;
+    switch (command) {
+    case C::NewTab: newTab(); break;
+    case C::NewWindow: emit newWindowRequested(false); break;
+    case C::NewIncognitoWindow: emit newWindowRequested(true); break;
+    case C::History: openInternal(QUrl(QStringLiteral("sora://history"))); break;
+    case C::Downloads: openInternal(QUrl(QStringLiteral("sora://downloads"))); break;
+    case C::BookmarkManager: openInternal(QUrl(QStringLiteral("sora://bookmarks"))); break;
+    case C::ToggleBookmarksBar:
+        m_bookmarksWanted = !m_bookmarksWanted;
+        m_bookmarks->setVisible(m_bookmarksWanted && !isFullScreen());
+        break;
+    case C::ZoomIn: zoom(+1); break;
+    case C::ZoomOut: zoom(-1); break;
+    case C::ZoomReset: zoom(0); break;
+    case C::FullScreen:
+        if (Tab* t = currentTab(); t && m_pageFullScreen)
+            t->page()->triggerAction(QWebEnginePage::ExitFullScreen); // vídeo a pantalla completa
+        else
+            setBrowserFullScreen(!isFullScreen());
+        break;
+    case C::Print: printPage(); break;
+    case C::Find: placeFindBar(); m_findBar->open(); break;
+    case C::ClearBrowsingData: openInternal(QUrl(QStringLiteral("sora://settings#borrar"))); break;
+    case C::DevTools: openDevTools(); break;
+    case C::Extensions: openInternal(QUrl(QStringLiteral("sora://extensions"))); break;
+    case C::Settings: openInternal(QUrl(QStringLiteral("sora://settings"))); break;
+    case C::About:
+        QMessageBox::about(this, tr("Acerca de Sora"),
+                           tr("<b>Sora %1</b><br>Navegador rápido y privado.<br><br>Motor: Qt WebEngine %2 "
+                              "(Chromium %3).<br>Bloqueo de anuncios: adblock-rust de Brave.")
+                               .arg(QCoreApplication::applicationVersion(), QString::fromLatin1(qVersion()),
+                                    QString::fromLatin1(qWebEngineChromiumVersion())));
+        break;
+    case C::Quit: qApp->closeAllWindows(); break;
+    case C::AddBookmark:
+    case C::SavePage:
+        break; // marcadores y descargas: tareas siguientes del plan del Hito 3
+    }
+}
+
+void MainWindow::openInternal(const QUrl& url)
+{
+    // Como Chrome: si la pestaña actual es una nueva pestaña, se reutiliza.
+    Tab* t = currentTab();
+    if (t && t->url().toString().startsWith(QLatin1String("sora://newtab")))
+        t->setUrl(url);
+    else
+        m_tabs->newTab(url);
+}
+
+void MainWindow::zoom(int step)
+{
+    static constexpr double levels[] = {0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25,
+                                        1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0};
+    Tab* t = currentTab();
+    if (!t)
+        return;
+    double next = 1.0;
+    const double now = t->zoomFactor();
+    if (step > 0) {
+        next = levels[std::size(levels) - 1];
+        for (double l : levels)
+            if (l > now + 0.001) { next = l; break; }
+    } else if (step < 0) {
+        next = levels[0];
+        for (double l : levels)
+            if (l < now - 0.001) next = l;
+    }
+    t->setZoomFactor(next);
+    m_toolbar->mainMenu()->setZoomPercent(qRound(next * 100));
+}
+
+void MainWindow::setBrowserFullScreen(bool on)
+{
+    if (on == isFullScreen())
+        return;
+    m_titleBar->setVisible(!on);
+    m_toolbar->setVisible(!on);
+    m_bookmarks->setVisible(!on && m_bookmarksWanted);
+    if (on) {
+        m_wasMaximized = isMaximized();
+        showFullScreen();
+    } else if (m_wasMaximized) {
+        showMaximized();
+    } else {
+        showNormal();
+    }
+}
+
+void MainWindow::openDevTools()
+{
+    Tab* t = currentTab();
+    if (!t)
+        return;
+    if (QWebEnginePage* dev = t->page()->devToolsPage()) {
+        if (auto* view = qobject_cast<QWidget*>(dev->parent())) {
+            view->raise();
+            view->activateWindow();
+        }
+        return;
+    }
+    // Ventana aparte, como Chrome con las herramientas desacopladas.
+    auto* view = new QWebEngineView;
+    view->setAttribute(Qt::WA_DeleteOnClose);
+    view->setPage(new QWebEnginePage(t->page()->profile(), view));
+    t->page()->setDevToolsPage(view->page());
+    view->setWindowTitle(tr("Herramientas para desarrolladores — %1").arg(t->title()));
+    view->resize(1000, 700);
+    connect(t, &QObject::destroyed, view, &QWidget::close);
+    view->show();
+}
+
+void MainWindow::printPage()
+{
+    Tab* t = currentTab();
+    if (!t)
+        return;
+    auto* printer = new QPrinter(QPrinter::HighResolution);
+    QPrintDialog dialog(printer, this);
+    dialog.setWindowTitle(tr("Imprimir"));
+    if (dialog.exec() != QDialog::Accepted) {
+        delete printer;
+        return;
+    }
+    connect(t, &QWebEngineView::printFinished, this, [printer](bool) { delete printer; }, Qt::SingleShotConnection);
+    t->print(printer);
+}
+
+void MainWindow::placeFindBar()
+{
+    m_findBar->adjustSize();
+    m_findBar->move(m_stack->width() - m_findBar->width() - 16, 0);
+}
+
 void MainWindow::applyColorScheme(Qt::ColorScheme scheme)
 {
     // Incógnito siempre en oscuro, como Chrome: se distingue de un vistazo.
@@ -263,6 +421,12 @@ void MainWindow::watchTab(Tab* tab)
     }));
     connect(tab, &QWebEngineView::loadStarted, this, ifCurrent([this] { refreshNavigation(); }));
     connect(tab, &QWebEngineView::loadFinished, this, ifCurrent([this](bool) { refreshNavigation(); }));
+    connect(tab->page(), &QWebEnginePage::fullScreenRequested, this, [this](QWebEngineFullScreenRequest request) {
+        request.accept();
+        m_pageFullScreen = request.toggleOn();
+        setBrowserFullScreen(request.toggleOn());
+    });
+    connect(tab->page(), &QWebEnginePage::printRequested, this, ifCurrent([this] { printPage(); }));
     connect(tab, &Tab::blockedCountChanged, this, ifCurrent([this](int count) { m_toolbar->setBlockedCount(count); }));
     connect(tab->page(), &QWebEnginePage::linkHovered, this, ifCurrent([this](const QUrl& url) {
         if (url.isEmpty()) {
@@ -285,6 +449,8 @@ void MainWindow::showCurrentTab()
     m_toolbar->omnibox()->setUrl(tab->url());
     m_toolbar->setBlockedCount(tab->blockedCount());
     m_linkPreview->hide();
+    m_findBar->hide();
+    m_toolbar->mainMenu()->setZoomPercent(qRound(tab->zoomFactor() * 100));
     setWindowTitle(titleFor(tab->title()));
     refreshNavigation();
 }
@@ -326,6 +492,27 @@ void MainWindow::addShortcuts()
     };
     on(QKeySequence(Qt::CTRL | Qt::Key_T), [this] { newTab(); });
     on(QKeySequence(Qt::CTRL | Qt::Key_N), [this] { emit newWindowRequested(false); });
+    using C = MainMenu::Command;
+    const std::pair<QKeySequence, C> commands[] = {
+        {QKeySequence(Qt::CTRL | Qt::Key_H), C::History},
+        {QKeySequence(Qt::CTRL | Qt::Key_J), C::Downloads},
+        {QKeySequence(Qt::CTRL | Qt::Key_D), C::AddBookmark},
+        {QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_B), C::ToggleBookmarksBar},
+        {QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_O), C::BookmarkManager},
+        {QKeySequence(Qt::CTRL | Qt::Key_Equal), C::ZoomIn},
+        {QKeySequence(Qt::CTRL | Qt::Key_Plus), C::ZoomIn},
+        {QKeySequence(Qt::CTRL | Qt::Key_Minus), C::ZoomOut},
+        {QKeySequence(Qt::CTRL | Qt::Key_0), C::ZoomReset},
+        {QKeySequence(Qt::Key_F11), C::FullScreen},
+        {QKeySequence(Qt::CTRL | Qt::Key_P), C::Print},
+        {QKeySequence(Qt::CTRL | Qt::Key_F), C::Find},
+        {QKeySequence(Qt::CTRL | Qt::Key_S), C::SavePage},
+        {QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Delete), C::ClearBrowsingData},
+        {QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_I), C::DevTools},
+        {QKeySequence(Qt::Key_F12), C::DevTools},
+    };
+    for (const auto& [keys, command] : commands)
+        on(keys, [this, command] { runCommand(command); });
     on(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_N), [this] { emit newWindowRequested(true); });
     for (auto keys : {QKeySequence(Qt::CTRL | Qt::Key_W), QKeySequence(Qt::CTRL | Qt::Key_F4)})
         on(keys, [this] { m_tabs->closeTab(m_tabs->currentIndex()); });

@@ -1,6 +1,7 @@
 #pragma once
 #include <QMainWindow>
 #include <QUrl>
+#include "ui/MainMenu.h"
 
 class QLabel;
 class QShortcut;
@@ -11,6 +12,7 @@ namespace sora {
 
 class AdblockService;
 class BookmarksBar;
+class FindBar;
 class Tab;
 class TabManager;
 class TitleBar;
@@ -59,6 +61,10 @@ private:
     QStackedWidget* m_stack;
     TabManager* m_tabs;
     QLabel* m_linkPreview;
+    FindBar* m_findBar;
+    bool m_bookmarksWanted = true; // lo que el usuario eligió (Ctrl+Mayús+B), fuera de pantalla completa
+    bool m_wasMaximized = false;
+    bool m_pageFullScreen = false; // un vídeo pidió pantalla completa: F11 se la quita a él
     QShortcut* m_stop = nullptr; // Esc: solo mientras carga la pestaña visible y el foco está en la web
     bool m_incognito;
     bool m_syncing = false; // cambios hechos por código en la tira: no reenviarlos
@@ -73,6 +79,13 @@ private:
     void placeLinkPreview();
     void addShortcuts();
     QString titleFor(const QString& pageTitle) const;
+    void runCommand(MainMenu::Command command);
+    void openInternal(const QUrl& url);
+    void zoom(int step); // +1, -1 o 0 (100 %), con los niveles de Chrome
+    void setBrowserFullScreen(bool on);
+    void openDevTools();
+    void printPage();
+    void placeFindBar();
 };
 
 } // namespace sora

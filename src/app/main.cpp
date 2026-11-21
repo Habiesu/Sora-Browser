@@ -34,6 +34,7 @@ int main(int argc, char* argv[])
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("Sora"));
     QApplication::setOrganizationName(QStringLiteral("Sora"));
+    QApplication::setApplicationVersion(QStringLiteral(SORA_VERSION));
 
     // Menús de Qt y de la web (clic derecho) en el idioma del sistema.
     // Instalado: junto a sora.exe (QLibraryInfo apunta a la carpeta de arriba). Compilado: la de Qt.
