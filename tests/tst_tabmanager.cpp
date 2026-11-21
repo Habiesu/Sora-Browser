@@ -5,6 +5,7 @@
 #include <QWebEngineProfile>
 
 #include "browser/Tab.h"
+#include "app/Settings.h"
 #include "browser/TabManager.h"
 #include <QFile>
 #include "privacy/AdblockEngine.h"
@@ -163,6 +164,40 @@ private slots:
         QVERIFY(!s->testAttribute(QWebEngineSettings::WebGLEnabled));
         page->acceptNavigationRequest(QUrl("https://threejs.org/"), QWebEnginePage::NavigationTypeLinkClicked, true);
         QVERIFY(s->testAttribute(QWebEngineSettings::WebGLEnabled));
+    }
+    void autoplayLikeChrome()
+    {
+        // Como Chrome: los vídeos arrancan solos (con sonido) en sitios de vídeo; en los demás, al tocar.
+        sora::Settings& settings = sora::Settings::instance();
+        settings.setValue("autoplay", "sites");
+        QStackedWidget stack;
+        TabManager tabs(m_profile, &m_adblock, &stack);
+        Tab* tab = tabs.newTab();
+        QWebEngineSettings* s = tab->page()->settings();
+        auto* page = static_cast<sora::Page*>(tab->page());
+        const auto gesture = QWebEngineSettings::PlaybackRequiresUserGesture;
+        page->acceptNavigationRequest(QUrl("https://www.youtube.com/watch?v=1"), QWebEnginePage::NavigationTypeTyped, true);
+        QVERIFY(!s->testAttribute(gesture));
+        page->acceptNavigationRequest(QUrl("https://noticias.test/"), QWebEnginePage::NavigationTypeLinkClicked, true);
+        QVERIFY(s->testAttribute(gesture));
+        page->acceptNavigationRequest(QUrl("https://m.twitch.tv/lobo"), QWebEnginePage::NavigationTypeLinkClicked, true);
+        QVERIFY(!s->testAttribute(gesture)); // subdominios también
+
+        settings.setValue("autoplay", "always");
+        page->acceptNavigationRequest(QUrl("https://noticias.test/"), QWebEnginePage::NavigationTypeLinkClicked, true);
+        QVERIFY(!s->testAttribute(gesture));
+        settings.setValue("autoplay", "never");
+        page->acceptNavigationRequest(QUrl("https://www.youtube.com/"), QWebEnginePage::NavigationTypeLinkClicked, true);
+        QVERIFY(s->testAttribute(gesture));
+
+        QVERIFY(!settings.setValue("autoplaySites", QStringList{"javascript:alert(1)"}));
+        QVERIFY(settings.setValue("autoplaySites", QStringList{"lobos.test"}));
+        settings.setValue("autoplay", "sites");
+        page->acceptNavigationRequest(QUrl("https://lobos.test/v"), QWebEnginePage::NavigationTypeLinkClicked, true);
+        QVERIFY(!s->testAttribute(gesture));
+        page->acceptNavigationRequest(QUrl("https://www.youtube.com/"), QWebEnginePage::NavigationTypeLinkClicked, true);
+        QVERIFY(s->testAttribute(gesture));
+        settings.setValue("autoplaySites", settings.defaultAutoplaySites());
     }
     void popupOpensNextToCurrent()
     {

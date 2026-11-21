@@ -4,6 +4,7 @@
 #include <QWebEngineSettings>
 
 #include "app/InternalPages.h"
+#include "app/Settings.h"
 
 namespace sora {
 
@@ -53,6 +54,8 @@ bool Page::acceptNavigationRequest(const QUrl& url, NavigationType type, bool is
         // Qt WebEngine si https://github.com deja de cerrar Sora con WebGL activado.
         const bool crashesAngle = url.host() == QLatin1String("github.com");
         settings()->setAttribute(QWebEngineSettings::WebGLEnabled, !crashesAngle);
+        // Qt pide siempre tocar la página para reproducir; Chrome deja en sitios de vídeo (ajustable).
+        settings()->setAttribute(QWebEngineSettings::PlaybackRequiresUserGesture, !Settings::instance().autoplayAllowed(url));
     }
     return QWebEnginePage::acceptNavigationRequest(url, type, isMainFrame);
 }

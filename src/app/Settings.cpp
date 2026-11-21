@@ -43,6 +43,10 @@ QVariant defaultFor(const QString& key)
         return true;
     if (key == QLatin1String("adblockAllowed"))
         return QStringList();
+    if (key == QLatin1String("autoplay"))
+        return QStringLiteral("sites");
+    if (key == QLatin1String("autoplaySites"))
+        return Settings::defaultAutoplaySites();
     if (key == QLatin1String("downloadPath"))
         return QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
     return {};
@@ -50,7 +54,7 @@ QVariant defaultFor(const QString& key)
 
 const QStringList kKeys = {QStringLiteral("search"), QStringLiteral("startup"), QStringLiteral("homepage"),
                            QStringLiteral("theme"), QStringLiteral("adblock"), QStringLiteral("adblockAllowed"),
-                           QStringLiteral("downloadPath")};
+                           QStringLiteral("downloadPath"), QStringLiteral("autoplay"), QStringLiteral("autoplaySites")};
 } // namespace
 
 Settings& Settings::instance()
@@ -69,8 +73,8 @@ QVariant Settings::value(const QString& key) const
 {
     if (key == QLatin1String("adblock")) // el .ini guarda texto: "true"/"false"
         return m_store.value(key, true).toBool();
-    if (key == QLatin1String("adblockAllowed")) // vacía o de un solo sitio el .ini no la guarda como lista
-        return m_store.value(key).toStringList();
+    if (key == QLatin1String("adblockAllowed") || key == QLatin1String("autoplaySites")) // el .ini no guarda listas de 0 o 1 como lista
+        return m_store.value(key, defaultFor(key)).toStringList();
     return m_store.value(key, defaultFor(key));
 }
 
@@ -97,7 +101,9 @@ bool Settings::setValue(const QString& key, const QVariant& value)
         ok = text == QLatin1String("system") || text == QLatin1String("light") || text == QLatin1String("dark");
     } else if (key == QLatin1String("adblock")) {
         ok = value.typeId() == QMetaType::Bool;
-    } else if (key == QLatin1String("adblockAllowed")) {
+    } else if (key == QLatin1String("autoplay")) {
+        ok = text == QLatin1String("sites") || text == QLatin1String("always") || text == QLatin1String("never");
+    } else if (key == QLatin1String("adblockAllowed") || key == QLatin1String("autoplaySites")) {
         ok = value.canConvert<QStringList>();
         for (const QString& site : value.toStringList())
             ok = ok && !site.isEmpty() && QUrl(QStringLiteral("https://") + site).host() == site;
@@ -111,6 +117,30 @@ bool Settings::setValue(const QString& key, const QVariant& value)
         emit changed(key);
     }
     return true;
+}
+
+QStringList Settings::defaultAutoplaySites()
+{
+    // Sitios donde Chrome suele dejar arrancar el vídeo con sonido (los que más se usan para ver vídeo).
+    return {QStringLiteral("youtube.com"), QStringLiteral("twitch.tv"), QStringLiteral("vimeo.com"),
+            QStringLiteral("netflix.com"), QStringLiteral("crunchyroll.com"), QStringLiteral("primevideo.com"),
+            QStringLiteral("disneyplus.com"), QStringLiteral("max.com"), QStringLiteral("kick.com"),
+            QStringLiteral("dailymotion.com"), QStringLiteral("open.spotify.com"), QStringLiteral("soundcloud.com")};
+}
+
+bool Settings::autoplayAllowed(const QUrl& url) const
+{
+    const QString mode = value(QStringLiteral("autoplay")).toString();
+    if (mode != QLatin1String("sites"))
+        return mode == QLatin1String("always");
+    const QStringList sites = value(QStringLiteral("autoplaySites")).toStringList();
+    for (QString host = url.host().toLower(); !host.isEmpty();) { // m.twitch.tv → twitch.tv → tv
+        if (sites.contains(host))
+            return true;
+        const qsizetype dot = host.indexOf(QLatin1Char('.'));
+        host = dot < 0 ? QString() : host.mid(dot + 1);
+    }
+    return false;
 }
 
 QString Settings::searchName() const

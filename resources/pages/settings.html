@@ -21,7 +21,8 @@
   .path { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
   .checks { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; }
   #cleared { color: var(--accent); font-size: 13px; }
-  #homepage-row[hidden] { display: none; }
+  #homepage-row[hidden], #autoplay-sites-row[hidden] { display: none; }
+  #contenido .hint { padding: 0 0 12px; }
   #about p { margin: 12px 0; color: var(--muted); }
 </style>
 </head>
@@ -77,6 +78,22 @@
     </div>
   </section>
 
+  <section id="contenido">
+    <h2>Reproducción automática</h2>
+    <div class="row">
+      <label for="autoplay">Vídeos y sonido al abrir una página</label>
+      <select id="autoplay">
+        <option value="sites">Solo en sitios de vídeo (como Chrome)</option>
+        <option value="always">Permitir siempre</option>
+        <option value="never">Esperar a que toque la página</option>
+      </select>
+    </div>
+    <div class="row" id="autoplay-sites-row">
+      <input type="text" id="autoplaySites" aria-label="Sitios de vídeo, separados por comas">
+    </div>
+    <p class="hint" id="autoplay-hint">Sitios separados por comas. En los demás, el vídeo espera a que hagas clic.</p>
+  </section>
+
   <section id="descargas">
     <h2>Descargas</h2>
     <div class="row">
@@ -108,10 +125,27 @@
   const $ = function (id) { return document.getElementById(id); };
   onSora(function (s) {
     s.settings(function (v) {
-      ['search', 'startup', 'theme'].forEach(function (k) { $(k).value = v[k]; });
+      $('autoplay').addEventListener('change', function () {
+      s.setSetting('autoplay', $('autoplay').value);
+      $('autoplay-sites-row').hidden = $('autoplay-hint').hidden = $('autoplay').value !== 'sites';
+    });
+    $('autoplaySites').addEventListener('change', function () {
+      const sites = $('autoplaySites').value.split(',').map(function (x) {
+        return x.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+      }).filter(Boolean);
+      s.setSetting('autoplaySites', sites, function (ok) {
+        $('autoplaySites').setCustomValidity(ok ? '' : 'Escribe sitios como youtube.com, separados por comas');
+        $('autoplaySites').reportValidity();
+        if (ok) $('autoplaySites').value = sites.join(', ');
+      });
+    });
+    ['search', 'startup', 'theme'].forEach(function (k) { $(k).value = v[k]; });
       $('homepage').value = v.homepage;
       $('homepage-row').hidden = v.startup !== 'homepage';
       $('adblock').checked = v.adblock;
+      $('autoplay').value = v.autoplay;
+      $('autoplaySites').value = v.autoplaySites.join(', ');
+      $('autoplay-sites-row').hidden = $('autoplay-hint').hidden = v.autoplay !== 'sites';
       $('downloadPath').textContent = v.downloadPath;
       $('downloadPath').title = v.downloadPath;
     });
