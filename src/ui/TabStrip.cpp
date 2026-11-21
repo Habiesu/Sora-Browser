@@ -1,5 +1,6 @@
 #include "ui/TabStrip.h"
 
+#include <QApplication>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
@@ -19,7 +20,7 @@ constexpr int kDragGap = 48; // como en Chrome: siempre queda barra libre para a
 constexpr int kPlusReserve = kPlusSize + 2 * kPlusGap + kDragGap;
 constexpr int kTabTopMargin = 6; // hueco sobre la pestaña: se ve la barra de título
 constexpr int kTabHeight = 40;
-constexpr int kDetachDistance = 30; // px fuera de la tira para sacar la pestaña
+constexpr int kDetachDistance = 30; // px fuera de la tira para separar la pestaña
 
 // Estilo propio de las pestañas: Sora las dibuja enteras (fondo, icono y título a la izquierda,
 // como Chrome). La hoja de estilos de Qt centraba el título; así además la pestaña que se arrastra
@@ -29,11 +30,17 @@ public:
     Palette palette = nieblaPalette(Qt::ColorScheme::Light);
 
     // Con más pestañas de las que caben, las flechas se corren a la izquierda: hueco para el "+".
+    // La × se centra en la parte visible de la pestaña (Qt la centra en todo el alto, con el hueco
+    // de arriba); al hacerlo aquí vale también mientras se arrastra.
     QRect subElementRect(SubElement element, const QStyleOption* option, const QWidget* widget) const override
     {
         QRect r = QProxyStyle::subElementRect(element, option, widget);
         if (element == SE_TabBarScrollLeftButton || element == SE_TabBarScrollRightButton)
             r.translate(-kPlusReserve, 0);
+        if (element == SE_TabBarTabRightButton && r.isValid()) {
+            const QRect visible = option->rect.adjusted(0, kTabTopMargin, 0, 0);
+            r.moveTop(visible.center().y() - r.height() / 2 + 1);
+        }
         return r;
     }
 
@@ -181,12 +188,6 @@ void TabStrip::tabInserted(int index)
 void TabStrip::tabLayoutChange()
 {
     QTabBar::tabLayoutChange();
-    // QTabBar centra la × en todo el alto, incluido el margen superior de la hoja de estilos.
-    for (int i = 0; i < count(); ++i)
-        if (QWidget* close = tabButton(i, RightSide)) {
-            const QRect visible = tabRect(i).adjusted(0, kTabTopMargin, 0, 0);
-            close->move(close->x(), visible.center().y() - close->height() / 2 + 1);
-        }
     placePlus();
 }
 
@@ -201,35 +202,128 @@ void TabStrip::mousePressEvent(QMouseEvent* event)
 {
     const int index = tabAt(event->position().toPoint());
     m_dragging = event->button() == Qt::LeftButton && index >= 0;
+    m_tabMoved = false;
     if (m_dragging) {
         m_pressX = event->position().toPoint().x();
+        m_pressTabLeft = tabRect(index).left();
         m_pressTabRight = tabRect(index).right();
+        m_pressGlobal = event->globalPosition().toPoint();
+        m_lastPos = event->position().toPoint();
     }
     QTabBar::mousePressEvent(event);
 }
 
+int TabStrip::maxTabRight() const
+{
+    return width() - kPlusReserve - 1; // el "+" y el hueco para arrastrar la ventana siempre a la vista
+}
+
+QRect TabStrip::draggedTabRect() const
+{
+    const int width = currentIndex() >= 0 ? tabRect(currentIndex()).width() : 0;
+    return {m_pressTabLeft + m_lastPos.x() - m_pressX, 0, width, height()};
+}
+
 void TabStrip::mouseMoveEvent(QMouseEvent* event)
 {
-    QTabBar::mouseMoveEvent(event);
-    // Como en Chrome, el "+" va pegado a la pestaña que se arrastra si pasa de la última.
-    if (m_dragging && (event->buttons() & Qt::LeftButton) && isMovable())
-        placePlus(m_pressTabRight + event->position().toPoint().x() - m_pressX);
+    const QPoint pos = event->position().toPoint();
+    const QPoint global = event->globalPosition().toPoint();
+    if (m_windowDrag) {
+        window()->move(global - m_grabOffset);
+        emit windowDragMoved(global);
+        return;
+    }
+    if (!m_dragging || !(event->buttons() & Qt::LeftButton) || !isMovable()) {
+        QTabBar::mouseMoveEvent(event);
+        return;
+    }
+    // Como en Chrome: fuera de la tira (arriba, abajo o pasados los botones) la pestaña se separa ya.
+    const bool outside = pos.y() < -kDetachDistance || pos.y() > height() + kDetachDistance
+                         || pos.x() < -kDetachDistance || pos.x() > width() + kDetachDistance;
+    if (outside) {
+        const int index = currentIndex();
+        finishTabDrag();
+        if (count() == 1) { // la ventana entera va con el ratón, con la pestaña bajo él
+            m_grabOffset = m_pressGlobal - window()->pos();
+            m_windowDrag = true;
+            window()->move(global - m_grabOffset);
+            emit windowDragMoved(global);
+        } else {
+            emit tabDetachRequested(index, global);
+        }
+        return;
+    }
+    // Dentro, la pestaña se frena antes del "+" y del hueco libre, y no pasa del borde izquierdo.
+    const int dx = std::clamp(pos.x() - m_pressX, -m_pressTabLeft, maxTabRight() - m_pressTabRight);
+    m_lastPos = QPoint(m_pressX + dx, pos.y());
+    m_tabMoved = m_tabMoved || qAbs(dx) >= QApplication::startDragDistance();
+    QMouseEvent clamped(event->type(), m_lastPos, mapToGlobal(m_lastPos), event->button(), event->buttons(),
+                        event->modifiers());
+    QTabBar::mouseMoveEvent(&clamped);
+    placePlus(m_pressTabRight + dx); // el "+" va pegado a la pestaña que se arrastra
+}
+
+void TabStrip::finishTabDrag()
+{
+    if (!m_dragging)
+        return;
+    m_dragging = false;
+    m_tabMoved = false;
+    // QTabBar acaba su arrastre como al soltar: la pestaña vuelve deslizándose a su sitio.
+    QMouseEvent release(QEvent::MouseButtonRelease, m_lastPos, mapToGlobal(m_lastPos), Qt::LeftButton, Qt::NoButton,
+                        Qt::NoModifier);
+    QTabBar::mouseReleaseEvent(&release);
+    QMetaObject::invokeMethod(this, [this] { placePlus(); }, Qt::QueuedConnection);
+}
+
+void TabStrip::beginWindowDrag(QPoint globalPos)
+{
+    m_grabOffset = globalPos - window()->pos();
+    m_windowDrag = true;
+    grabMouse(); // el ratón sigue pulsado: sus movimientos y el soltar llegan aquí
+}
+
+void TabStrip::endWindowDrag()
+{
+    if (!m_windowDrag)
+        return;
+    m_windowDrag = false;
+    if (mouseGrabber() == this)
+        releaseMouse();
+}
+
+void TabStrip::beginTabDrag(int index, QPoint globalPos)
+{
+    setCurrentIndex(index);
+    const QRect r = tabRect(index);
+    const QPoint local = mapFromGlobal(globalPos);
+    const QPoint at(std::clamp(local.x(), r.left() + 4, r.right() - 4), r.center().y());
+    QMouseEvent press(QEvent::MouseButtonPress, at, mapToGlobal(at), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+    mousePressEvent(&press);
+    grabMouse();
+}
+
+bool TabStrip::event(QEvent* event)
+{
+    // Alt+Tab (u otra ventana delante) en pleno arrastre: el soltar no llegará aquí, se termina ya.
+    if (event->type() == QEvent::WindowDeactivate) {
+        finishTabDrag();
+        endWindowDrag();
+    }
+    return QTabBar::event(event);
 }
 
 void TabStrip::mouseReleaseEvent(QMouseEvent* event)
 {
-    if (event->button() == Qt::LeftButton)
-        QMetaObject::invokeMethod(this, [this] { placePlus(); }, Qt::QueuedConnection); // vuelve a su sitio
+    if (event->button() == Qt::LeftButton && m_windowDrag) {
+        endWindowDrag();
+        return;
+    }
     if (event->button() == Qt::LeftButton && m_dragging) {
-        m_dragging = false;
-        // Soltada lejos de la tira (como en Chrome): a otra ventana o a una nueva. La arrastrada
-        // es la actual (pulsar una pestaña la selecciona).
-        const QPoint pos = event->position().toPoint();
-        if (!rect().adjusted(0, -kDetachDistance, 0, kDetachDistance).contains(pos)) {
-            QTabBar::mouseReleaseEvent(event);
-            emit tabDetachRequested(currentIndex(), mapToGlobal(pos));
-            return;
-        }
+        finishTabDrag();
+        if (mouseGrabber() == this)
+            releaseMouse(); // venía de beginTabDrag
+        return;
     }
     if (event->button() == Qt::MiddleButton) {
         const int index = tabAt(event->position().toPoint());

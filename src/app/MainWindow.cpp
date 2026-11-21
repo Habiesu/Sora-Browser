@@ -185,6 +185,7 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
     connect(strip, &QTabBar::tabMoved, m_tabs, &TabManager::moveTab);
     connect(strip, &TabStrip::newTabRequested, this, &MainWindow::newTab);
     connect(strip, &TabStrip::tabDetachRequested, this, &MainWindow::tabDetachRequested);
+    connect(strip, &TabStrip::windowDragMoved, this, &MainWindow::windowDragMoved);
 
     connect(m_titleBar, &TitleBar::minimizeRequested, this, &QWidget::showMinimized);
     connect(m_titleBar, &TitleBar::maximizeToggleRequested, this, &MainWindow::toggleMaximized);
@@ -568,6 +569,11 @@ void MainWindow::toggleBookmark()
         m_bookmarkStore->removeUrl(t->url());
     else
         m_bookmarkStore->add(t->url(), t->title());
+}
+
+TabStrip* MainWindow::tabStrip() const
+{
+    return m_titleBar->tabs();
 }
 
 void MainWindow::refreshShield()

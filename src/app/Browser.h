@@ -53,6 +53,7 @@ private:
     MainWindow* createWindow(bool incognito, bool startWithTab);
     void applySettings();
     void onTabDetachRequested(MainWindow* from, int index, QPoint globalPos);
+    void onWindowDragMoved(MainWindow* dragged, QPoint globalPos);
 };
 
 } // namespace sora

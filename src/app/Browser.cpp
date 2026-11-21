@@ -86,6 +86,7 @@ MainWindow* Browser::createWindow(bool incognito, bool startWithTab)
     connect(w, &MainWindow::newWindowRequested, this, [this](bool incognitoWindow) { newWindow(incognitoWindow); });
     connect(w, &MainWindow::tabDetachRequested, this,
             [this, w](int index, QPoint globalPos) { onTabDetachRequested(w, index, globalPos); });
+    connect(w, &MainWindow::windowDragMoved, this, [this, w](QPoint globalPos) { onWindowDragMoved(w, globalPos); });
     return w;
 }
 
@@ -164,20 +165,30 @@ bool Browser::moveTab(MainWindow* from, int index, MainWindow* to, int toIndex)
 
 void Browser::onTabDetachRequested(MainWindow* from, int index, QPoint globalPos)
 {
-    // ¿Se soltó sobre la tira de pestañas de otra ventana? Allí; si no, ventana nueva.
-    if (QWidget* under = QApplication::widgetAt(globalPos)) {
-        for (const auto& w : std::as_const(m_windows)) {
-            if (!w || w == from || under->window() != w)
-                continue;
-            auto* strip = w->findChild<TabStrip*>();
-            if (strip && strip->rect().contains(strip->mapFromGlobal(globalPos))) {
-                const int at = strip->tabAt(strip->mapFromGlobal(globalPos));
-                moveTab(from, index, w, at < 0 ? w->tabs()->count() : at);
-                return;
-            }
-        }
+    // Como Chrome: la pestaña sale ya en su ventana, bajo el ratón, y la ventana lo sigue hasta soltar.
+    if (MainWindow* w = detachTab(from, index, globalPos))
+        w->tabStrip()->beginWindowDrag(globalPos);
+}
+
+void Browser::onWindowDragMoved(MainWindow* dragged, QPoint globalPos)
+{
+    // ¿La ventana arrastrada pasa con el ratón por la tira de pestañas de otra? Se une ya, y la
+    // pestaña se sigue arrastrando entre las de esa ventana.
+    for (const auto& w : std::as_const(m_windows)) {
+        if (!w || w == dragged || !w->isVisible() || w->isMinimized() || w->isIncognito() != dragged->isIncognito())
+            continue;
+        TabStrip* strip = w->tabStrip();
+        const QPoint local = strip->mapFromGlobal(globalPos);
+        if (!strip->rect().contains(local))
+            continue;
+        const int at = strip->tabAt(local) < 0 ? w->tabs()->count() : strip->tabAt(local);
+        dragged->tabStrip()->endWindowDrag();
+        if (!moveTab(dragged, 0, w, at)) // `dragged` se cierra sola: era su única pestaña
+            return;
+        w->raise();
+        strip->beginTabDrag(std::min(at, w->tabs()->count() - 1), globalPos);
+        return;
     }
-    detachTab(from, index, globalPos);
 }
 
 } // namespace sora

@@ -7,6 +7,18 @@ using sora::TabStrip;
 
 static QToolButton* plusOf(TabStrip& bar) { return bar.findChild<QToolButton*>("NewTabButton"); }
 
+// Movimiento y soltar con el botón izquierdo pulsado, para arrastres que no empezaron con un clic aquí.
+static void dragMove(QWidget* w, QPoint p)
+{
+    QMouseEvent e(QEvent::MouseMove, p, w->mapToGlobal(p), Qt::NoButton, Qt::LeftButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(w, &e);
+}
+static void dragRelease(QWidget* w, QPoint p)
+{
+    QMouseEvent e(QEvent::MouseButtonRelease, p, w->mapToGlobal(p), Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+    QCoreApplication::sendEvent(w, &e);
+}
+
 class TestTabStrip : public QObject {
     Q_OBJECT
 private slots:
@@ -32,22 +44,122 @@ private slots:
         QCOMPARE(spy.count(), 1);
         QCOMPARE(spy.first().at(0).toInt(), 1);
     }
-    void droppingOutsideDetaches()
+    void leavingTheStripDetachesAtOnce()
     {
+        // Como Chrome: la pestaña se separa en cuanto sale de la tira, sin esperar a soltar.
         TabStrip bar;
         bar.addTab("A"); bar.addTab("B");
         bar.resize(1200, 40);
         bar.show();
         QSignalSpy spy(&bar, &TabStrip::tabDetachRequested);
         const QPoint start = bar.tabRect(1).center();
-        const QPoint outside = start + QPoint(0, 150);
+        const QPoint outside = start + QPoint(0, 60);
         QTest::mousePress(&bar, Qt::LeftButton, {}, start);
-        QTest::mouseMove(&bar, start + QPoint(0, 40));
+        QTest::mouseMove(&bar, start + QPoint(0, 10));
+        QCOMPARE(spy.count(), 0); // aún dentro
         QTest::mouseMove(&bar, outside);
-        QTest::mouseRelease(&bar, Qt::LeftButton, {}, outside);
         QCOMPARE(spy.count(), 1);
         QCOMPARE(spy.first().at(0).toInt(), 1);
         QCOMPARE(spy.first().at(1).toPoint(), bar.mapToGlobal(outside));
+        QTest::mouseMove(&bar, outside + QPoint(0, 30));
+        QTest::mouseRelease(&bar, Qt::LeftButton, {}, outside);
+        QCOMPARE(spy.count(), 1); // una sola vez
+    }
+    void draggedTabStopsBeforeTheEnd()
+    {
+        // Como Chrome: la pestaña se frena antes de los botones y deja ver el "+" y un hueco libre.
+        TabStrip bar;
+        bar.addTab("A"); bar.addTab("B");
+        bar.resize(1200, 40);
+        bar.show();
+        QSignalSpy spy(&bar, &TabStrip::tabDetachRequested);
+        const QPoint start = bar.tabRect(1).center();
+        QTest::mousePress(&bar, Qt::LeftButton, {}, start);
+        for (int x = start.x() + 20; x <= 1180; x += 40)
+            QTest::mouseMove(&bar, QPoint(x, start.y()));
+        QCOMPARE(spy.count(), 0); // dentro de la tira no se separa
+        const QRect plus = plusOf(bar)->geometry();
+        QVERIFY2(bar.width() - plus.right() >= 40, qPrintable(QString("+ acaba en x=%1").arg(plus.right())));
+        QVERIFY2(bar.draggedTabRect().right() < plus.left(),
+                 qPrintable(QString("pestaña hasta x=%1, + desde x=%2").arg(bar.draggedTabRect().right()).arg(plus.left())));
+        QTest::mouseMove(&bar, QPoint(1199 + 60, start.y())); // y si se sigue, se separa
+        QCOMPARE(spy.count(), 1);
+        QTest::mouseRelease(&bar, Qt::LeftButton, {}, QPoint(1199 + 60, start.y()));
+    }
+    void singleTabDragMovesTheWindow()
+    {
+        // Con una sola pestaña, sacarla es arrastrar la ventana entera (para unirla a otra).
+        QWidget window;
+        TabStrip bar(&window);
+        bar.addTab("A");
+        window.resize(1200, 300);
+        bar.resize(1200, 40);
+        window.move(100, 100);
+        window.show();
+        QSignalSpy detach(&bar, &TabStrip::tabDetachRequested);
+        QSignalSpy moved(&bar, &TabStrip::windowDragMoved);
+        const QPoint start = bar.tabRect(0).center();
+        const QPoint before = window.pos();
+        const QPoint target = bar.mapToGlobal(start + QPoint(50, 110)); // en pantalla: la ventana se moverá
+        QTest::mousePress(&bar, Qt::LeftButton, {}, start);
+        QTest::mouseMove(&bar, start + QPoint(0, 60));
+        QTest::mouseMove(&bar, bar.mapFromGlobal(target));
+        QCOMPARE(detach.count(), 0);
+        QVERIFY(moved.count() >= 1);
+        QCOMPARE(window.pos(), before + QPoint(50, 110));
+        QTest::mouseRelease(&bar, Qt::LeftButton, {}, bar.mapFromGlobal(target));
+        QVERIFY(!bar.isDraggingWindow());
+    }
+    void windowDragCanStartFromOutside()
+    {
+        // La ventana nueva de una pestaña separada sigue al ratón hasta soltar.
+        QWidget window;
+        TabStrip bar(&window);
+        bar.addTab("A");
+        window.resize(800, 300);
+        bar.resize(800, 40);
+        window.move(200, 200);
+        window.show();
+        const QPoint grab = window.pos() + QPoint(120, 20);
+        bar.beginWindowDrag(grab);
+        QVERIFY(bar.isDraggingWindow());
+        dragMove(&bar, bar.mapFromGlobal(grab + QPoint(30, 40)));
+        QCOMPARE(window.pos(), QPoint(230, 240));
+        dragRelease(&bar, bar.mapFromGlobal(grab + QPoint(30, 40)));
+        QVERIFY(!bar.isDraggingWindow());
+    }
+    void tabDragCanStartFromOutside()
+    {
+        // Al unirse a otra ventana, la pestaña se sigue arrastrando en su tira sin soltar.
+        TabStrip bar;
+        bar.addTab("A"); bar.addTab("B"); bar.addTab("C");
+        bar.resize(1200, 40);
+        bar.show();
+        QSignalSpy moved(&bar, &QTabBar::tabMoved);
+        bar.beginTabDrag(2, bar.mapToGlobal(bar.tabRect(2).center()));
+        QCOMPARE(bar.currentIndex(), 2);
+        const QPoint start = bar.tabRect(2).center();
+        for (int x = start.x(); x >= bar.tabRect(0).center().x() - 20; x -= 20)
+            dragMove(&bar, QPoint(x, start.y()));
+        dragRelease(&bar, QPoint(bar.tabRect(0).center().x() - 20, start.y()));
+        QVERIFY(moved.count() >= 1);
+        QCOMPARE(bar.tabText(0), QString("C"));
+    }
+    void losingFocusEndsTheDrag()
+    {
+        // Alt+Tab en pleno arrastre: la pestaña vuelve a su sitio y no se queda colgada.
+        TabStrip bar;
+        bar.addTab("A"); bar.addTab("B");
+        bar.resize(1200, 40);
+        bar.show();
+        const QPoint start = bar.tabRect(1).center();
+        QTest::mousePress(&bar, Qt::LeftButton, {}, start);
+        QTest::mouseMove(&bar, start + QPoint(30, 0));
+        QTest::mouseMove(&bar, start + QPoint(120, 0));
+        QVERIFY(bar.isDraggingTab());
+        QEvent deactivate(QEvent::WindowDeactivate);
+        QCoreApplication::sendEvent(&bar, &deactivate);
+        QVERIFY(!bar.isDraggingTab());
     }
     void clickingDoesNotDetach()
     {
@@ -164,6 +276,28 @@ private slots:
         // Entre A y B (ninguna activa): línea. Entre B y C (C activa): sin línea, como Chrome.
         QCOMPARE(colorAt(bar.tabRect(0).right(), y), p.line.name());
         QVERIFY(colorAt(bar.tabRect(1).right(), y) != p.line.name());
+    }
+    void closeButtonStaysCenteredWhileDragging()
+    {
+        const sora::Palette p = sora::nieblaPalette(Qt::ColorScheme::Dark);
+        QWidget host;
+        host.setStyleSheet(sora::nieblaStyleSheet(p));
+        TabStrip bar(&host);
+        bar.addTab("A"); bar.addTab("B");
+        host.resize(1200, 40);
+        bar.resize(1200, 40);
+        host.show();
+        const QPoint start = bar.tabRect(1).center();
+        QTest::mousePress(&bar, Qt::LeftButton, {}, start);
+        QTest::mouseMove(&bar, start + QPoint(30, 0));
+        QTest::mouseMove(&bar, start + QPoint(90, 0));
+        const int visibleCenter = bar.tabRect(1).adjusted(0, 6, 0, 0).center().y();
+        for (int i = 0; i < 2; ++i) {
+            const QWidget* close = bar.tabButton(i, QTabBar::RightSide);
+            QVERIFY2(qAbs(close->geometry().center().y() - visibleCenter) <= 1,
+                     qPrintable(QString("× %1 en y=%2, centro y=%3").arg(i).arg(close->geometry().center().y()).arg(visibleCenter)));
+        }
+        QTest::mouseRelease(&bar, Qt::LeftButton, {}, start + QPoint(90, 0));
     }
     void closeButtonIsVerticallyCentered()
     {

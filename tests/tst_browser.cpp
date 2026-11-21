@@ -7,6 +7,7 @@
 #include "browser/TabManager.h"
 #include "privacy/AdblockService.h"
 #include "data/BookmarkStore.h"
+#include "ui/TabStrip.h"
 #include <QToolButton>
 
 using sora::Browser;
@@ -91,6 +92,37 @@ private slots:
         QVERIFY(browser.moveTab(a, 0, b, 1));
         QTRY_COMPARE(browser.windows().size(), 1);
         QCOMPARE(b->tabs()->count(), 2);
+    }
+    void detachedWindowFollowsTheMouse()
+    {
+        // Como Chrome: al sacar la pestaña aparece su ventana bajo el ratón y lo sigue hasta soltar.
+        Browser browser(m_profile, &m_adblock);
+        MainWindow* first = browser.newWindow();
+        first->tabs()->newTab();
+        emit first->tabStrip()->tabDetachRequested(1, QPoint(500, 400));
+        QCOMPARE(browser.windows().size(), 2);
+        MainWindow* created = browser.windows().last();
+        QVERIFY(created != first);
+        QVERIFY(created->tabStrip()->isDraggingWindow());
+        created->tabStrip()->endWindowDrag();
+    }
+    void draggedWindowJoinsAnotherStrip()
+    {
+        // Ventana de una pestaña arrastrada sobre la tira de otra: se une ya y se sigue arrastrando ahí.
+        Browser browser(m_profile, &m_adblock);
+        MainWindow* target = browser.newWindow();
+        target->tabs()->newTab();
+        target->move(100, 100);
+        MainWindow* floating = browser.newWindow();
+        sora::Tab* moved = floating->currentTab();
+        floating->tabStrip()->beginWindowDrag(QPoint(900, 600));
+        const QPoint overStrip = target->tabStrip()->mapToGlobal(target->tabStrip()->tabRect(1).center());
+        emit floating->tabStrip()->windowDragMoved(overStrip);
+        QCOMPARE(target->tabs()->count(), 3);
+        QVERIFY(target->tabs()->tab(1) == moved || target->tabs()->tab(2) == moved);
+        QVERIFY(target->tabStrip()->isDraggingTab() || target->tabStrip()->mouseGrabber() == target->tabStrip());
+        QTRY_COMPARE(browser.windows().size(), 1);
+        QTest::mouseRelease(target->tabStrip(), Qt::LeftButton, {}, target->tabStrip()->mapFromGlobal(overStrip));
     }
     void tabsCannotCrossIntoIncognito()
     {

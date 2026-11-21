@@ -20,6 +20,7 @@ class HistoryStore;
 class FindBar;
 class Tab;
 class TabManager;
+class TabStrip;
 class TitleBar;
 class Toolbar;
 
@@ -50,11 +51,13 @@ public:
     void showNotice(const QString& text);
     void openExtensionPopup(QWebEngineProfile* profile, const QUrl& url);
     void refreshShield(); // escudo gris si está apagado en el sitio de la pestaña actual
+    TabStrip* tabStrip() const;
 
 signals:
     void newWindowRequested(bool incognito);
     // La pestaña se ha soltado fuera de la tira: ventana nueva o la ventana que haya debajo.
     void tabDetachRequested(int index, QPoint globalPos);
+    void windowDragMoved(QPoint globalPos); // se arrastra la ventana por su única pestaña
 
 protected:
     void changeEvent(QEvent* event) override;
