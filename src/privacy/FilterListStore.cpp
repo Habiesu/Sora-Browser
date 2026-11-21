@@ -16,7 +16,7 @@ namespace sora {
 namespace {
 
 // Cambiar este prefijo invalida todas las cachés (p. ej. al actualizar el crate adblock).
-constexpr QByteArrayView kFormatTag = "sora-adblock-ffi-0.1/adblock-0.13";
+constexpr QByteArrayView kFormatTag = "sora-adblock-ffi-0.1/adblock-0.13/huella-por-fecha";
 
 struct BuildResult {
     std::shared_ptr<const AdblockEngine> engine;
@@ -50,15 +50,15 @@ QByteArray readAll(const QString& path)
 // Se ejecuta fuera del hilo de interfaz.
 BuildResult buildEngine(const QString& dir, const QStringList& listFiles)
 {
-    QByteArray rules;
+    // La huella sale del nombre, tamaño y fecha de cada lista: comprobar la caché no lee los ~4 MB
+    // de listas en cada arranque (competían con la carga de la primera página).
     QCryptographicHash hash(QCryptographicHash::Sha256);
     hash.addData(kFormatTag);
     for (const QString& file : listFiles) {
-        const QByteArray content = readAll(dir + QStringLiteral("/lists/") + file);
+        const QFileInfo info(dir + QStringLiteral("/lists/") + file);
         hash.addData(file.toUtf8());
-        hash.addData(content);
-        rules += content;
-        rules += '\n';
+        hash.addData(QByteArray::number(info.size()));
+        hash.addData(QByteArray::number(info.lastModified().toMSecsSinceEpoch()));
     }
     const QByteArray fingerprint = hash.result().toHex();
     const QString binPath = dir + QStringLiteral("/engine.bin");
@@ -69,6 +69,11 @@ BuildResult buildEngine(const QString& dir, const QStringList& listFiles)
             return {std::make_shared<const AdblockEngine>(std::move(*cached)), {}};
     }
 
+    QByteArray rules;
+    for (const QString& file : listFiles) {
+        rules += readAll(dir + QStringLiteral("/lists/") + file);
+        rules += '\n';
+    }
     auto engine = std::make_shared<const AdblockEngine>(AdblockEngine::fromRules(rules));
     // Si no se puede guardar la caché, el motor sigue siendo válido: se recompilará la próxima vez.
     if (writeAtomically(binPath, engine->serialize()))

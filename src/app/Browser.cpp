@@ -60,6 +60,14 @@ MainWindow* Browser::newWindow(bool incognito)
     return w;
 }
 
+MainWindow* Browser::showFirstWindow()
+{
+    MainWindow* w = createWindow(false, false);
+    w->show();
+    w->repaint(); // a pantalla ya, antes de crear la vista web de la primera pestaña
+    return w;
+}
+
 MainWindow* Browser::createWindow(bool incognito, bool startWithTab)
 {
     QWebEngineProfile* profile = m_profile;

@@ -40,9 +40,13 @@ int main(int argc, char* argv[])
 {
     QElapsedTimer sinceStart; // --bench mide desde aquí
     sinceStart.start();
+    // SORA_TRACE=1: imprime en stderr cuánto tarda cada fase del arranque (para optimizarlo).
+    const bool trace = qEnvironmentVariableIsSet("SORA_TRACE");
+    auto mark = [&](const char* what) { if (trace) std::fprintf(stderr, "%6lld ms  %s\n", (long long)sinceStart.elapsed(), what); };
 
     sora::registerSoraScheme(); // antes de la aplicación
     QApplication app(argc, argv);
+    mark("QApplication");
     QApplication::setApplicationName(QStringLiteral("Sora"));
     QApplication::setOrganizationName(QStringLiteral("Sora"));
     QApplication::setApplicationVersion(QStringLiteral(SORA_VERSION));
@@ -61,6 +65,7 @@ int main(int argc, char* argv[])
         }
     }
 
+    mark("traductores");
     QCommandLineParser cli;
     cli.addHelpOption();
     const QCommandLineOption benchOption(QStringLiteral("bench"),
@@ -83,14 +88,22 @@ int main(int argc, char* argv[])
         instance.listen();
     }
 
+    mark("instancia unica");
     auto* profile = new QWebEngineProfile(QStringLiteral("default"), &app);
+    mark("perfil");
 
     auto* adblock = new sora::AdblockService(&app);
     adblock->attach(profile);
     sora::installInternalPages(profile);
 
+    mark("adblock + paginas internas");
     sora::Browser browser(profile, adblock);
-    sora::MainWindow* window = browser.newWindow();
+    mark("Browser");
+    sora::MainWindow* window = browser.showFirstWindow();
+    const qint64 windowShownMs = sinceStart.elapsed(); // la ventana ya está en pantalla
+    mark("ventana en pantalla");
+    window->newTab();
+    mark("primera pestaña");
     QObject::connect(&instance, &sora::SingleInstance::received, &browser, [&browser](const QString& input) {
         sora::MainWindow* w = browser.activeWindow();
         if (!w)
@@ -105,10 +118,7 @@ int main(int argc, char* argv[])
         w->activateWindow();
     });
 
-    qint64 windowShownMs = -1;
     if (bench) {
-        // El primer ciclo del bucle de eventos tras show() es cuando la ventana ya está en pantalla.
-        QTimer::singleShot(0, window, [&] { windowShownMs = sinceStart.elapsed(); });
         QObject::connect(window->currentTab(), &QWebEngineView::loadFinished, &app, [&](bool) {
             std::printf("{\"window_shown_ms\":%lld,\"first_load_ms\":%lld}\n",
                         static_cast<long long>(windowShownMs), static_cast<long long>(sinceStart.elapsed()));

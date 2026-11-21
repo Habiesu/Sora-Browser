@@ -92,6 +92,30 @@ private slots:
         QCOMPARE(server.requests, before);
     }
 
+    void changedListRebuildsEngine()
+    {
+        // La caché se reconoce por tamaño y fecha de las listas: una lista nueva no reutiliza el motor viejo.
+        QTemporaryDir dir;
+        TinyHttpServer server(smallRules());
+        QNetworkAccessManager nam;
+        {
+            FilterListStore first(dir.path(), {server.url("easylist.txt")}, &nam);
+            QSignalSpy ready(&first, &FilterListStore::engineReady);
+            first.start();
+            QVERIFY(ready.wait(10000));
+        }
+        QFile list(dir.path() + "/lists/easylist.txt");
+        QVERIFY(list.open(QIODevice::WriteOnly));
+        list.write("! lista nueva\n||otro.example^\n");
+        list.close();
+        FilterListStore second(dir.path(), {server.url("easylist.txt")}, &nam);
+        QSignalSpy ready(&second, &FilterListStore::engineReady);
+        second.start();
+        QVERIFY(ready.wait(10000));
+        const auto engine = ready.first().at(0).value<std::shared_ptr<const sora::AdblockEngine>>();
+        QVERIFY(engine->shouldBlock(QUrl("https://otro.example/x.js"), QUrl("https://site.test"), "script"));
+        QVERIFY(!blocksAd(ready.first()));
+    }
     void rebuildsOnCorruptCache()
     {
         QTemporaryDir dir;

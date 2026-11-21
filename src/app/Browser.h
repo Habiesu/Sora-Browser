@@ -25,6 +25,9 @@ public:
 
     // Ventana nueva y visible con una pestaña vacía.
     MainWindow* newWindow(bool incognito = false);
+    // La primera ventana al abrir Sora: se pinta ya, sin pestañas (crear la vista web tarda);
+    // quien la pide le abre después la primera pestaña.
+    MainWindow* showFirstWindow();
     QList<MainWindow*> windows() const;
     // La última que estuvo activa (para lo que llega de otro Sora abierto después).
     MainWindow* activeWindow() const;
