@@ -9,8 +9,7 @@
 #include <QFileInfo>
 #include <QProcess>
 #include <QUrl>
-#include <QWebEngineDownloadRequest>
-#include <QWebEngineProfile>
+#include <QStandardPaths>
 
 #include "data/Database.h"
 
@@ -42,25 +41,23 @@ void DownloadManager::openHistory(const QString& databasePath)
     emit changed();
 }
 
-void DownloadManager::save(const QWebEngineDownloadRequest* d)
+void DownloadManager::save(const Item& d)
 {
-    using R = QWebEngineDownloadRequest;
-    if (m_connection.isEmpty())
+    if (m_connection.isEmpty() || d.incognito) // incógnito no deja rastro en disco
         return;
-    const QString state = d->state() == R::DownloadCompleted   ? QStringLiteral("done")
-                          : d->state() == R::DownloadCancelled ? QStringLiteral("cancelled")
-                                                               : QStringLiteral("failed");
+    const QString state = d.state == Done        ? QStringLiteral("done")
+                          : d.state == Cancelled ? QStringLiteral("cancelled")
+                                                 : QStringLiteral("failed");
     QSqlQuery q(QSqlDatabase::database(m_connection));
     q.prepare(QStringLiteral("INSERT INTO downloads(name, url, path, total, state, finished) VALUES(?, ?, ?, ?, ?, ?)"));
-    q.addBindValue(d->downloadFileName());
-    q.addBindValue(d->url().toString());
-    q.addBindValue(QDir(d->downloadDirectory()).filePath(d->downloadFileName()));
-    q.addBindValue(d->receivedBytes());
+    q.addBindValue(d.name);
+    q.addBindValue(d.url.toString());
+    q.addBindValue(d.path);
+    q.addBindValue(d.received);
     q.addBindValue(state);
     q.addBindValue(QDateTime::currentMSecsSinceEpoch());
     q.exec();
 }
-
 QString DownloadManager::pastPath(int id) const
 {
     for (const QVariant& v : m_past)
@@ -69,60 +66,75 @@ QString DownloadManager::pastPath(int id) const
     return {};
 }
 
-void DownloadManager::attach(QWebEngineProfile* profile)
+QString DownloadManager::begin(uint32_t cefId, const QString& suggestedName, const QUrl& url, bool incognito)
 {
-    const bool incognito = profile->isOffTheRecord();
-    connect(profile, &QWebEngineProfile::downloadRequested, this, [this, incognito](QWebEngineDownloadRequest* request) {
-        if (request->isSavePageDownload() && askSavePath) {
-            const QString path = askSavePath(QDir(request->downloadDirectory()).filePath(request->downloadFileName()));
-            if (path.isEmpty()) {
-                request->cancel();
-                return;
-            }
-            request->setDownloadDirectory(QFileInfo(path).absolutePath());
-            request->setDownloadFileName(QFileInfo(path).fileName());
-        }
-        connect(request, &QWebEngineDownloadRequest::stateChanged, this, &DownloadManager::changed);
-        connect(request, &QWebEngineDownloadRequest::isPausedChanged, this, &DownloadManager::changed);
-        if (!incognito) // incógnito no deja rastro en disco
-            connect(request, &QWebEngineDownloadRequest::isFinishedChanged, this, [this, request] {
-                if (request->isFinished())
-                    save(request);
-            });
-        request->accept();
-        m_items.append(request);
-        emit started(request->downloadFileName());
-        emit changed();
-    });
+    const QString folder = m_folder.isEmpty() ? QStandardPaths::writableLocation(QStandardPaths::DownloadLocation) : m_folder;
+    QDir().mkpath(folder);
+    // Como Chrome: "foto.jpg", "foto (1).jpg"... sin pisar nada.
+    const QFileInfo name(suggestedName.isEmpty() ? QStringLiteral("descarga") : suggestedName);
+    QString path = QDir(folder).filePath(name.fileName());
+    for (int n = 1; QFileInfo::exists(path); ++n)
+        path = QDir(folder).filePath(name.suffix().isEmpty()
+                                         ? QStringLiteral("%1 (%2)").arg(name.completeBaseName()).arg(n)
+                                         : QStringLiteral("%1 (%2).%3").arg(name.completeBaseName()).arg(n).arg(name.suffix()));
+    Item item;
+    item.cefId = cefId;
+    item.name = QFileInfo(path).fileName();
+    item.url = url;
+    item.path = path;
+    item.incognito = incognito;
+    m_items.append(item);
+    emit started(item.name);
+    emit changed();
+    return path;
 }
 
-QWebEngineDownloadRequest* DownloadManager::item(int id) const
+void DownloadManager::update(const Update& u)
 {
-    return id >= 0 && id < m_items.size() ? m_items.at(id).data() : nullptr;
+    for (Item& d : m_items) {
+        if (d.cefId != u.id || d.removed)
+            continue;
+        const State before = d.state;
+        d.received = u.received;
+        d.total = u.total;
+        if (!u.path.isEmpty())
+            d.path = u.path;
+        d.state = u.state;
+        d.callback = u.state == Progress ? u.callback : nullptr;
+        if (d.state != before) {
+            if (d.state != Progress)
+                save(d);
+            emit changed();
+        }
+        return;
+    }
+}
+
+DownloadManager::Item* DownloadManager::item(int id)
+{
+    return id >= 0 && id < m_items.size() && !m_items[id].removed ? &m_items[id] : nullptr;
 }
 
 QVariantList DownloadManager::list() const
 {
-    using R = QWebEngineDownloadRequest;
     QVariantList out;
     for (int id = int(m_items.size()) - 1; id >= 0; --id) {
-        const R* d = m_items.at(id);
-        if (!d)
-            continue; // borrada con clearFinished o con su perfil
+        const Item& d = m_items.at(id);
+        if (d.removed)
+            continue;
         QString state;
-        switch (d->state()) {
-        case R::DownloadRequested:
-        case R::DownloadInProgress: state = d->isPaused() ? QStringLiteral("paused") : QStringLiteral("progress"); break;
-        case R::DownloadCompleted: state = QStringLiteral("done"); break;
-        case R::DownloadCancelled: state = QStringLiteral("cancelled"); break;
-        case R::DownloadInterrupted: state = QStringLiteral("failed"); break;
+        switch (d.state) {
+        case Progress: state = d.paused ? QStringLiteral("paused") : QStringLiteral("progress"); break;
+        case Done: state = QStringLiteral("done"); break;
+        case Cancelled: state = QStringLiteral("cancelled"); break;
+        case Failed: state = QStringLiteral("failed"); break;
         }
         out.append(QVariantMap{{QStringLiteral("id"), id},
-                               {QStringLiteral("name"), d->downloadFileName()},
-                               {QStringLiteral("url"), d->url().toString()},
-                               {QStringLiteral("path"), QDir(d->downloadDirectory()).filePath(d->downloadFileName())},
-                               {QStringLiteral("received"), d->receivedBytes()},
-                               {QStringLiteral("total"), d->totalBytes()},
+                               {QStringLiteral("name"), d.name},
+                               {QStringLiteral("url"), d.url.toString()},
+                               {QStringLiteral("path"), d.path},
+                               {QStringLiteral("received"), d.received},
+                               {QStringLiteral("total"), d.total},
                                {QStringLiteral("state"), state}});
     }
     for (QVariant v : m_past) {
@@ -133,41 +145,42 @@ QVariantList DownloadManager::list() const
     }
     return out;
 }
-
 void DownloadManager::cancel(int id)
 {
-    if (auto* d = item(id))
-        d->cancel();
+    if (Item* d = item(id); d && d->callback)
+        d->callback->Cancel();
 }
 
 void DownloadManager::pause(int id)
 {
-    if (auto* d = item(id))
-        d->pause();
+    if (Item* d = item(id); d && d->callback) {
+        d->callback->Pause();
+        d->paused = true;
+        emit changed();
+    }
 }
 
 void DownloadManager::resume(int id)
 {
-    if (auto* d = item(id))
-        d->resume();
+    if (Item* d = item(id); d && d->callback) {
+        d->callback->Resume();
+        d->paused = false;
+        emit changed();
+    }
 }
 
 void DownloadManager::open(int id) const
 {
-    if (id < 0) {
-        if (const QString path = pastPath(id); QFile::exists(path))
-            QDesktopServices::openUrl(QUrl::fromLocalFile(path));
-        return;
-    }
-    if (auto* d = item(id); d && d->state() == QWebEngineDownloadRequest::DownloadCompleted)
-        QDesktopServices::openUrl(QUrl::fromLocalFile(QDir(d->downloadDirectory()).filePath(d->downloadFileName())));
+    const QString path = id < 0 ? pastPath(id)
+                         : id < m_items.size() && m_items[id].state == Done ? m_items[id].path
+                                                                            : QString();
+    if (!path.isEmpty() && QFile::exists(path))
+        QDesktopServices::openUrl(QUrl::fromLocalFile(path));
 }
-
 void DownloadManager::showInFolder(int id) const
 {
-    auto* d = item(id);
     const QString path = QDir::toNativeSeparators(
-        id < 0 ? pastPath(id) : d ? QDir(d->downloadDirectory()).filePath(d->downloadFileName()) : QString());
+        id < 0 ? pastPath(id) : id < m_items.size() ? m_items[id].path : QString());
     if (path.isEmpty())
         return;
 #ifdef Q_OS_WIN
@@ -179,9 +192,9 @@ void DownloadManager::showInFolder(int id) const
 
 void DownloadManager::clearFinished()
 {
-    for (auto& d : m_items)
-        if (d && d->isFinished())
-            d = nullptr; // el id de las demás no cambia
+    for (Item& d : m_items)
+        if (d.state != Progress)
+            d.removed = true; // el id de las demás no cambia
     m_past.clear();
     if (!m_connection.isEmpty())
         QSqlQuery(QSqlDatabase::database(m_connection)).exec(QStringLiteral("DELETE FROM downloads"));

@@ -20,12 +20,12 @@ ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 # Subprocesos de CEF (renderer, GPU, red): sin Qt.
-add_executable(sora-helper WIN32 helper.cpp compatibility.manifest)
+add_executable(sora-helper WIN32 helper.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/compatibility.manifest)
 SET_EXECUTABLE_TARGET_PROPERTIES(sora-helper)
 add_dependencies(sora-helper libcef_dll_wrapper)
 target_link_libraries(sora-helper libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS})
 
-add_executable(sora-cef WIN32 main.cpp compatibility.manifest)
+add_executable(sora-cef WIN32 main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/compatibility.manifest)
 SET_EXECUTABLE_TARGET_PROPERTIES(sora-cef)
 add_dependencies(sora-cef libcef_dll_wrapper sora-helper)
 target_link_libraries(sora-cef libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS} Qt6::Widgets)

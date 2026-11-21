@@ -4,13 +4,13 @@
 #include <QEvent>
 #include <QFileDialog>
 #include <QStyleHints>
-#include <QWebEngineProfile>
 
 #include "app/InternalApi.h"
 #include "app/InternalPages.h"
 #include "app/Settings.h"
 #include "app/MainWindow.h"
 #include "browser/DownloadManager.h"
+#include "browser/Profile.h"
 #include "browser/Tab.h"
 #include "data/BookmarkStore.h"
 #include "data/HistoryStore.h"
@@ -20,13 +20,13 @@
 
 namespace sora {
 
-Browser::Browser(QWebEngineProfile* profile, AdblockService* adblock, QObject* parent)
+Browser::Browser(Profile* profile, AdblockService* adblock, QObject* parent)
     : QObject(parent)
     , m_profile(profile)
     , m_adblock(adblock)
     , m_downloads(new DownloadManager(this))
 {
-    m_downloads->attach(m_profile);
+    m_profile->setDownloads(m_downloads);
     applySettings();
     connect(&Settings::instance(), &Settings::changed, this, [this](const QString& key) {
         applySettings();
@@ -38,10 +38,6 @@ Browser::Browser(QWebEngineProfile* profile, AdblockService* adblock, QObject* p
                     if (Tab* t = w->tabs()->tab(i); t->url().scheme() == QLatin1String("sora"))
                         t->reload();
     });
-    m_downloads->askSavePath = [this](const QString& suggested) {
-        return QFileDialog::getSaveFileName(activeWindow(), tr("Guardar página como"), suggested,
-                                            tr("Página web, un solo archivo (*.mhtml)"));
-    };
     connect(m_downloads, &DownloadManager::started, this, [this](const QString& name) {
         if (MainWindow* w = activeWindow())
             w->showNotice(tr("Descargando %1 (Ctrl+J para ver las descargas)").arg(name));
@@ -70,15 +66,12 @@ MainWindow* Browser::showFirstWindow()
 
 MainWindow* Browser::createWindow(bool incognito, bool startWithTab)
 {
-    QWebEngineProfile* profile = m_profile;
+    Profile* profile = m_profile;
     if (incognito) {
         if (!m_incognito) {
-            m_incognito = new QWebEngineProfile(this); // sin nombre: no escribe nada en disco
-            if (m_adblock)
-                m_adblock->attach(m_incognito);
+            m_incognito = new Profile(true, m_adblock, this); // en memoria: no escribe nada en disco
             installInternalPages(m_incognito);
-            m_downloads->attach(m_incognito);
-            m_incognito->setDownloadPath(m_profile->downloadPath());
+            m_incognito->setDownloads(m_downloads);
             if (m_api)
                 m_api->setProfiles({m_profile, m_incognito});
         }
@@ -126,10 +119,7 @@ void Browser::applySettings()
         m_adblock->setEnabled(s.value(QStringLiteral("adblock")).toBool());
         m_adblock->setAllowedSites(s.value(QStringLiteral("adblockAllowed")).toStringList());
     }
-    const QString downloads = s.value(QStringLiteral("downloadPath")).toString();
-    for (QWebEngineProfile* p : {m_profile, m_incognito})
-        if (p)
-            p->setDownloadPath(downloads);
+    m_downloads->setFolder(s.value(QStringLiteral("downloadPath")).toString());
 }
 
 QList<MainWindow*> Browser::windows() const

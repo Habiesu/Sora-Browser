@@ -5,11 +5,12 @@
 #include <QUrl>
 
 class QStackedWidget;
-class QWebEngineProfile;
+
 
 namespace sora {
 
 class AdblockService;
+class Profile;
 class Tab;
 
 // Crea, cierra, mueve y selecciona pestañas. El orden vive en m_order; el QStackedWidget solo
@@ -17,7 +18,7 @@ class Tab;
 class TabManager : public QObject {
     Q_OBJECT
 public:
-    TabManager(QWebEngineProfile* profile, const AdblockService* adblock, QStackedWidget* stack,
+    TabManager(Profile* profile, const AdblockService* adblock, QStackedWidget* stack,
                QObject* parent = nullptr);
 
     // index −1 = al final. La primera pestaña siempre queda activa.
@@ -49,7 +50,7 @@ signals:
 
 private:
     Tab* removeTab(int index, bool keep);
-    QWebEngineProfile* m_profile;
+    Profile* m_profile;
     const AdblockService* m_adblock;
     QStackedWidget* m_stack;
     QList<Tab*> m_order;

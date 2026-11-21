@@ -9,9 +9,11 @@ class QNetworkReply;
 class QTimer;
 class QShortcut;
 class QStackedWidget;
-class QWebEngineProfile;
+
 
 namespace sora {
+
+class Profile;
 
 class AdblockService;
 class BookmarksBar;
@@ -32,7 +34,7 @@ QUrl urlFromInput(const QString& input);
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
-    MainWindow(QWebEngineProfile* profile, const AdblockService* adblock, bool startWithTab = true,
+    MainWindow(Profile* profile, const AdblockService* adblock, bool startWithTab = true,
                QWidget* parent = nullptr);
     ~MainWindow() override;
 
@@ -49,7 +51,7 @@ public:
     void applyColorScheme(Qt::ColorScheme scheme);
     // Aviso breve abajo a la izquierda (p. ej. si fallan las listas de bloqueo).
     void showNotice(const QString& text);
-    void openExtensionPopup(QWebEngineProfile* profile, const QUrl& url);
+    void openExtensionPopup(Profile* profile, const QUrl& url);
     void refreshShield(); // escudo gris si está apagado en el sitio de la pestaña actual
     TabStrip* tabStrip() const;
 

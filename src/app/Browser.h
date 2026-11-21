@@ -5,9 +5,11 @@
 #include <QPointer>
 #include <memory>
 
-class QWebEngineProfile;
+
 
 namespace sora {
+
+class Profile;
 
 class AdblockService;
 class BookmarkStore;
@@ -20,7 +22,7 @@ class MainWindow;
 class Browser : public QObject {
     Q_OBJECT
 public:
-    Browser(QWebEngineProfile* profile, AdblockService* adblock, QObject* parent = nullptr);
+    Browser(Profile* profile, AdblockService* adblock, QObject* parent = nullptr);
     ~Browser() override;
 
     // Ventana nueva y visible con una pestaña vacía.
@@ -43,8 +45,8 @@ public:
     BookmarkStore* bookmarks() const { return m_bookmarks; }
 
 private:
-    QWebEngineProfile* m_profile;
-    QWebEngineProfile* m_incognito = nullptr; // se crea la primera vez y vive mientras Sora
+    Profile* m_profile;
+    Profile* m_incognito = nullptr; // se crea la primera vez y vive mientras Sora
     AdblockService* m_adblock;
     QList<QPointer<MainWindow>> m_windows;
     QPointer<MainWindow> m_active;

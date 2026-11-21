@@ -1,22 +1,18 @@
 #pragma once
 #include <QObject>
 #include <QPointer>
+#include <QJsonArray>
 #include <QVariantList>
-
-class QWebEngineExtensionManager;
-class QWebEngineProfile;
 
 namespace sora {
 
 class BookmarkStore;
 
-// Las extensiones que trae Chromium (visor de PDF, Hangouts): no se muestran ni se tocan.
-bool isBuiltInExtension(const QString& id);
-
 class DownloadManager;
 class HistoryStore;
+class Profile;
 
-// Lo que las páginas sora:// pueden pedirle a Sora (por QWebChannel, objeto "sora" en JavaScript).
+// Lo que las páginas sora:// pueden pedirle a Sora (window.sora en JavaScript, por window.cefQuery).
 // Solo se da a páginas sora://: ninguna web normal lo ve.
 class InternalApi : public QObject {
     Q_OBJECT
@@ -47,9 +43,11 @@ public:
     Q_INVOKABLE void clearBrowsingData(bool history, bool cookies, bool cache);
     Q_INVOKABLE QVariantMap about() const;
     // El primero es el perfil normal: el único con extensiones.
-    void setProfiles(QList<QWebEngineProfile*> profiles);
+    void setProfiles(QList<Profile*> profiles);
+    // Llamada desde una página: método y argumentos en JSON. ok = false si el método no existe.
+    QVariant call(const QString& method, const QJsonArray& args, bool* ok);
 
-    // Extensiones: [{id, name, description, enabled, error, popup}].
+    // Extensiones: [{id, name, description, enabled, error, popup}]. Los cambios se aplican al reiniciar.
     Q_INVOKABLE QVariantList extensions() const;
     Q_INVOKABLE void installExtension(); // pide un .zip o .crx
     Q_INVOKABLE void loadUnpackedExtension(); // pide una carpeta
@@ -65,9 +63,7 @@ private:
     HistoryStore* m_history;
     QPointer<BookmarkStore> m_bookmarks;
     QPointer<DownloadManager> m_downloads;
-    QList<QWebEngineProfile*> m_profiles;
-
-    QWebEngineExtensionManager* extensionManager() const;
+    QList<Profile*> m_profiles;
 };
 
 } // namespace sora

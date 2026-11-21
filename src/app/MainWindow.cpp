@@ -3,11 +3,6 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QPointer>
-#include <QPrintDialog>
-#include <QPrinter>
-#include <QWebEngineFindTextResult>
-#include <QWebEngineFullScreenRequest>
-#include <QtWebEngineCore/qtwebenginecoreglobal.h>
 #include <QLabel>
 #include <QMouseEvent>
 #include <QRegularExpression>
@@ -19,13 +14,8 @@
 #include <QToolTip>
 #include <QUrlQuery>
 #include <QVBoxLayout>
-#include <QWebEngineHistory>
-#include <QWebEngineProfile>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
-#include <QWebEngineExtensionInfo>
-#include <QWebEngineExtensionManager>
-#include <QWebEngineView>
 #include <QLibraryInfo>
 #include <QMenu>
 #include <QScreen>
@@ -35,6 +25,10 @@
 #include "app/InternalPages.h"
 #include "app/Settings.h"
 #include "browser/Suggestions.h"
+#include "browser/Engine.h"
+#include "browser/Extensions.h"
+#include "browser/Profile.h"
+#include <QFileDialog>
 #include "privacy/AdblockService.h"
 #include "browser/Tab.h"
 #include "data/BookmarkStore.h"
@@ -92,7 +86,7 @@ QString windowTitleFor(const QString& title)
 }
 } // namespace
 
-MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock, bool startWithTab, QWidget* parent)
+MainWindow::MainWindow(Profile* profile, const AdblockService* adblock, bool startWithTab, QWidget* parent)
     : QMainWindow(parent)
     , m_titleBar(new TitleBar(this))
     , m_toolbar(new Toolbar(this))
@@ -128,16 +122,15 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
     layout->addWidget(m_stack, 1);
     setCentralWidget(central);
 
+    // La web es una ventana nativa (CEF): lo que flota encima también tiene que serlo para verse.
+    m_linkPreview->setAttribute(Qt::WA_NativeWindow);
+    m_findBar->setAttribute(Qt::WA_NativeWindow);
     m_linkPreview->setObjectName(QStringLiteral("LinkPreview"));
     m_linkPreview->setAttribute(Qt::WA_TransparentForMouseEvents);
     m_linkPreview->hide();
     connect(m_findBar, &FindBar::findRequested, this, [this](const QString& text, bool backward) {
         if (Tab* t = currentTab())
-            t->findText(text, backward ? QWebEnginePage::FindBackward : QWebEnginePage::FindFlags(),
-                        [bar = QPointer<FindBar>(m_findBar)](const QWebEngineFindTextResult& r) {
-                            if (bar)
-                                bar->setResult(r.activeMatch(), r.numberOfMatches());
-                        });
+            t->findText(text, backward);
     });
     connect(m_findBar, &FindBar::closed, this, [this] {
         if (Tab* t = currentTab()) {
@@ -273,17 +266,17 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
     connect(&Settings::instance(), &Settings::changed, this, [this] { refreshShield(); });
 
     // Botón de extensiones (puzle), como en Chrome. Incógnito no tiene extensiones.
-    m_toolbar->setExtensionsVisible(!m_incognito && profile->extensionManager());
+    m_toolbar->setExtensionsVisible(!m_incognito);
     QMenu* extensions = m_toolbar->extensionsMenu();
     connect(extensions, &QMenu::aboutToShow, this, [this, profile, extensions] {
         extensions->clear();
         bool any = false;
-        for (const QWebEngineExtensionInfo& e : profile->extensionManager()->extensions()) {
-            if (!e.isEnabled() || isBuiltInExtension(e.id()))
+        for (const Extensions::Entry& e : Extensions::all()) {
+            if (!e.enabled || e.pending)
                 continue;
             any = true;
-            QAction* a = extensions->addAction(e.name());
-            const QUrl popup = e.actionPopupUrl();
+            QAction* a = extensions->addAction(e.name);
+            const QUrl popup = e.popup;
             a->setEnabled(popup.isValid());
             connect(a, &QAction::triggered, this, [this, profile, popup] { openExtensionPopup(profile, popup); });
         }
@@ -312,10 +305,8 @@ QString MainWindow::titleFor(const QString& pageTitle) const
 
 Tab* MainWindow::takeTab(int index)
 {
-    if (Tab* tab = m_tabs->tab(index)) {
+    if (Tab* tab = m_tabs->tab(index))
         tab->disconnect(this);
-        tab->page()->disconnect(this);
-    }
     return m_tabs->takeTab(index);
 }
 
@@ -329,10 +320,8 @@ MainWindow::~MainWindow()
     // Las pestañas se destruyen después que los miembros de la ventana: que no avisen a nadie.
     // También las cerradas que esperan su deleteLater: siguen siendo hijas del stack.
     m_tabs->disconnect(this);
-    for (Tab* tab : m_stack->findChildren<Tab*>(Qt::FindDirectChildrenOnly)) {
+    for (Tab* tab : m_stack->findChildren<Tab*>(Qt::FindDirectChildrenOnly))
         tab->disconnect(this);
-        tab->page()->disconnect(this);
-    }
 }
 
 Tab* MainWindow::currentTab() const
@@ -371,7 +360,7 @@ void MainWindow::runCommand(MainMenu::Command command)
     case C::ZoomReset: zoom(0); break;
     case C::FullScreen:
         if (Tab* t = currentTab(); t && m_pageFullScreen)
-            t->page()->triggerAction(QWebEnginePage::ExitFullScreen); // vídeo a pantalla completa
+            t->exitFullScreen(); // vídeo a pantalla completa
         else
             setBrowserFullScreen(!isFullScreen());
         break;
@@ -383,16 +372,21 @@ void MainWindow::runCommand(MainMenu::Command command)
     case C::Settings: openInternal(QUrl(QStringLiteral("sora://settings"))); break;
     case C::About:
         QMessageBox::about(this, tr("Acerca de Sora"),
-                           tr("<b>Sora %1</b><br>Navegador rápido y privado.<br><br>Motor: Qt WebEngine %2 "
-                              "(Chromium %3).<br>Bloqueo de anuncios: adblock-rust de Brave.")
-                               .arg(QCoreApplication::applicationVersion(), QString::fromLatin1(qVersion()),
-                                    QString::fromLatin1(qWebEngineChromiumVersion())));
+                           tr("<b>Sora %1</b><br>Navegador rápido y privado.<br><br>Motor: CEF (Chromium %2), interfaz Qt %3."
+                              "<br>Bloqueo de anuncios: adblock-rust de Brave.")
+                               .arg(QCoreApplication::applicationVersion(), engine::chromiumVersion(),
+                                    QString::fromLatin1(qVersion())));
         break;
     case C::Quit: qApp->closeAllWindows(); break;
     case C::AddBookmark: toggleBookmark(); break;
     case C::SavePage:
-        if (Tab* t = currentTab())
-            t->page()->triggerAction(QWebEnginePage::SavePage); // DownloadManager pregunta dónde
+        if (Tab* t = currentTab()) {
+            const QString path = QFileDialog::getSaveFileName(this, tr("Guardar página como"),
+                                                              t->title() + QStringLiteral(".mhtml"),
+                                                              tr("Página web, un solo archivo (*.mhtml)"));
+            if (!path.isEmpty())
+                t->savePage(path);
+        }
         break;
     }
 }
@@ -443,19 +437,22 @@ void MainWindow::requestSearchSuggestions()
     });
 }
 
-void MainWindow::openExtensionPopup(QWebEngineProfile* profile, const QUrl& url)
+void MainWindow::openExtensionPopup(Profile* profile, const QUrl& url)
 {
     // shortcut: tamaño fijo; Chrome ajusta la ventana al contenido. Medirlo si alguna extensión queda cortada.
-    auto* popup = new QWebEngineView(profile, this);
-    popup->setWindowFlags(Qt::Popup);
+    auto* popup = new QWidget(this, Qt::Popup);
     popup->setAttribute(Qt::WA_DeleteOnClose);
     popup->resize(380, 480);
-    connect(popup->page(), &QWebEnginePage::windowCloseRequested, popup, &QWidget::close);
-    popup->setUrl(url);
+    auto* layout = new QVBoxLayout(popup);
+    layout->setContentsMargins(0, 0, 0, 0);
+    auto* view = new Tab(profile, popup);
+    layout->addWidget(view);
+    connect(view, &Tab::windowCloseRequested, popup, &QWidget::close);
     const QRect screen = this->screen()->availableGeometry();
     QPoint at = mapToGlobal(QPoint(width() - popup->width() - 8, m_titleBar->height() + m_toolbar->height()));
     popup->move(qBound(screen.left(), at.x(), screen.right() - popup->width()), at.y());
     popup->show();
+    view->setUrl(url); // ya con su ventana nativa
 }
 
 void MainWindow::openInternal(const QUrl& url)
@@ -509,41 +506,15 @@ void MainWindow::setBrowserFullScreen(bool on)
 
 void MainWindow::openDevTools()
 {
-    Tab* t = currentTab();
-    if (!t)
-        return;
-    if (QWebEnginePage* dev = t->page()->devToolsPage()) {
-        if (auto* view = qobject_cast<QWidget*>(dev->parent())) {
-            view->raise();
-            view->activateWindow();
-        }
-        return;
-    }
-    // Ventana aparte, como Chrome con las herramientas desacopladas.
-    auto* view = new QWebEngineView;
-    view->setAttribute(Qt::WA_DeleteOnClose);
-    view->setPage(new QWebEnginePage(t->page()->profile(), view));
-    t->page()->setDevToolsPage(view->page());
-    view->setWindowTitle(tr("Herramientas para desarrolladores — %1").arg(t->title()));
-    view->resize(1000, 700);
-    connect(t, &QObject::destroyed, view, &QWidget::close);
-    view->show();
+    // Ventana aparte, como Chrome con las herramientas desacopladas (CEF reutiliza la que ya esté abierta).
+    if (Tab* t = currentTab())
+        t->showDevTools();
 }
 
 void MainWindow::printPage()
 {
-    Tab* t = currentTab();
-    if (!t)
-        return;
-    auto* printer = new QPrinter(QPrinter::HighResolution);
-    QPrintDialog dialog(printer, this);
-    dialog.setWindowTitle(tr("Imprimir"));
-    if (dialog.exec() != QDialog::Accepted) {
-        delete printer;
-        return;
-    }
-    connect(t, &QWebEngineView::printFinished, this, [printer](bool) { delete printer; }, Qt::SingleShotConnection);
-    t->print(printer);
+    if (Tab* t = currentTab())
+        t->print(); // vista previa e impresoras de Chromium
 }
 
 void MainWindow::setStores(HistoryStore* history, BookmarkStore* bookmarks)
@@ -627,27 +598,26 @@ void MainWindow::watchTab(Tab* tab)
                 f(args...);
         };
     };
-    connect(tab, &QWebEngineView::urlChanged, this, ifCurrent([this](const QUrl& url) {
+    connect(tab, &Tab::urlChanged, this, ifCurrent([this](const QUrl& url) {
         m_toolbar->omnibox()->setUrl(url);
         refreshStar();
         refreshShield();
         refreshNavigation();
     }));
-    connect(tab, &QWebEngineView::loadStarted, this, ifCurrent([this] { refreshNavigation(); }));
-    connect(tab, &QWebEngineView::loadFinished, this, ifCurrent([this](bool) { refreshNavigation(); }));
-    connect(tab, &QWebEngineView::loadFinished, this, [this, tab](bool ok) {
+    connect(tab, &Tab::loadStarted, this, ifCurrent([this] { refreshNavigation(); }));
+    connect(tab, &Tab::loadFinished, this, ifCurrent([this](bool) { refreshNavigation(); }));
+    connect(tab, &Tab::loadFinished, this, [this, tab](bool ok) {
         const QString scheme = tab->url().scheme();
         if (ok && m_history && (scheme == QLatin1String("https") || scheme == QLatin1String("http")))
             m_history->addVisit(tab->url(), tab->title());
     });
-    connect(tab->page(), &QWebEnginePage::fullScreenRequested, this, [this](QWebEngineFullScreenRequest request) {
-        request.accept();
-        m_pageFullScreen = request.toggleOn();
-        setBrowserFullScreen(request.toggleOn());
+    connect(tab, &Tab::fullScreenRequested, this, [this](bool on) {
+        m_pageFullScreen = on;
+        setBrowserFullScreen(on);
     });
-    connect(tab->page(), &QWebEnginePage::printRequested, this, ifCurrent([this] { printPage(); }));
+    connect(tab, &Tab::findResult, this, ifCurrent([this](int active, int matches) { m_findBar->setResult(active, matches); }));
     connect(tab, &Tab::blockedCountChanged, this, ifCurrent([this](int count) { m_toolbar->setBlockedCount(count); }));
-    connect(tab->page(), &QWebEnginePage::linkHovered, this, ifCurrent([this](const QUrl& url) {
+    connect(tab, &Tab::linkHovered, this, ifCurrent([this](const QUrl& url) {
         if (url.isEmpty()) {
             m_linkPreview->hide();
             return;
@@ -681,7 +651,7 @@ void MainWindow::refreshNavigation()
     Tab* tab = currentTab();
     if (!tab)
         return;
-    m_toolbar->setNavigation(tab->history()->canGoBack(), tab->history()->canGoForward(), tab->isLoading());
+    m_toolbar->setNavigation(tab->canGoBack(), tab->canGoForward(), tab->isLoading());
     if (m_stop)
         m_stop->setEnabled(tab->isLoading());
 }
@@ -758,6 +728,13 @@ void MainWindow::addShortcuts()
     connect(m_stop, &QShortcut::activated, this, [this] { if (auto* t = currentTab()) t->stop(); });
     on(QKeySequence(Qt::ALT | Qt::Key_Left), [this] { if (auto* t = currentTab()) t->back(); });
     on(QKeySequence(Qt::ALT | Qt::Key_Right), [this] { if (auto* t = currentTab()) t->forward(); });
+
+    // Con la web enfocada las teclas van a CEF: estas se le devuelven a la ventana (ver Tab).
+    QSet<int> keys;
+    for (QShortcut* s : findChildren<QShortcut*>())
+        for (const QKeySequence& k : s->keys())
+            keys.insert(k[0].toCombined());
+    engine::setShortcuts(keys);
 }
 
 void MainWindow::changeEvent(QEvent* event)

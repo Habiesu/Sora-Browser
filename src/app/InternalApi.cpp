@@ -3,25 +3,18 @@
 #include <QApplication>
 #include <QFileDialog>
 #include <QUrl>
-#include <QWebEngineCookieStore>
-#include <QWebEngineExtensionInfo>
-#include <QWebEngineExtensionManager>
-#include <QWebEngineProfile>
-#include <QtWebEngineCore/qtwebenginecoreglobal.h>
+#include <QMessageBox>
 
 #include "app/Settings.h"
 
 #include "browser/DownloadManager.h"
+#include "browser/Engine.h"
+#include "browser/Extensions.h"
+#include "browser/Profile.h"
 #include "data/BookmarkStore.h"
 #include "data/HistoryStore.h"
 
 namespace sora {
-
-bool isBuiltInExtension(const QString& id)
-{
-    return id == QLatin1String("mhjfbmdgcfjbbpaeojofohoefgiehjai") // visor de PDF
-           || id == QLatin1String("nkeimhogjdpnpccoofpliimaahmaaome"); // Hangouts
-}
 
 InternalApi::InternalApi(HistoryStore* history, BookmarkStore* bookmarks, DownloadManager* downloads,
                          QObject* parent)
@@ -81,93 +74,105 @@ void InternalApi::clearBrowsingData(bool history, bool cookies, bool cache)
 {
     if (history && m_history)
         m_history->clear();
-    for (QWebEngineProfile* p : std::as_const(m_profiles)) {
+    for (Profile* p : std::as_const(m_profiles)) {
         if (cookies)
-            p->cookieStore()->deleteAllCookies();
+            p->clearCookies();
         if (cache)
-            p->clearHttpCache();
+            p->clearCache();
     }
 }
 
-void InternalApi::setProfiles(QList<QWebEngineProfile*> profiles)
+void InternalApi::setProfiles(QList<Profile*> profiles)
 {
-    const bool first = m_profiles.isEmpty();
     m_profiles = std::move(profiles);
-    if (auto* manager = extensionManager(); manager && first) {
-        using M = QWebEngineExtensionManager;
-        for (auto signal : {&M::loadFinished, &M::installFinished, &M::unloadFinished, &M::uninstallFinished})
-            connect(manager, signal, this, &InternalApi::extensionsChanged);
-    }
-}
-
-QWebEngineExtensionManager* InternalApi::extensionManager() const
-{
-    return m_profiles.isEmpty() ? nullptr : m_profiles.first()->extensionManager();
 }
 
 QVariantList InternalApi::extensions() const
 {
     QVariantList out;
-    if (auto* manager = extensionManager())
-        for (const QWebEngineExtensionInfo& e : manager->extensions()) {
-            if (isBuiltInExtension(e.id()))
-                continue;
-            out.append(QVariantMap{{QStringLiteral("id"), e.id()},
-                                   {QStringLiteral("name"), e.name()},
-                                   {QStringLiteral("description"), e.description()},
-                                   {QStringLiteral("enabled"), e.isEnabled()},
-                                   {QStringLiteral("error"), e.error()},
-                                   {QStringLiteral("popup"), e.actionPopupUrl().toString()}});
-        }
+    for (const Extensions::Entry& e : Extensions::all())
+        out.append(QVariantMap{{QStringLiteral("id"), e.id},
+                               {QStringLiteral("name"), e.name},
+                               {QStringLiteral("description"), e.description},
+                               {QStringLiteral("enabled"), e.enabled},
+                               {QStringLiteral("error"), e.pending ? tr("Se aplicará al reiniciar Sora.") : QString()},
+                               {QStringLiteral("popup"), e.popup.toString()}});
     return out;
 }
 
 void InternalApi::installExtension()
 {
-    auto* manager = extensionManager();
-    if (!manager)
-        return;
     const QString file = QFileDialog::getOpenFileName(QApplication::activeWindow(), tr("Instalar extensión"), QString(),
                                                       tr("Extensión (*.zip *.crx)"));
-    if (!file.isEmpty())
-        manager->installExtension(file);
+    if (file.isEmpty())
+        return;
+    if (const QString error = Extensions::install(file); !error.isEmpty())
+        QMessageBox::warning(QApplication::activeWindow(), tr("Instalar extensión"), error);
+    emit extensionsChanged();
 }
 
 void InternalApi::loadUnpackedExtension()
 {
-    auto* manager = extensionManager();
-    if (!manager)
-        return;
     const QString dir = QFileDialog::getExistingDirectory(QApplication::activeWindow(), tr("Carpeta de la extensión"));
-    if (!dir.isEmpty())
-        manager->installExtension(dir); // se copia: sigue ahí aunque se borre la carpeta
+    if (dir.isEmpty())
+        return;
+    // Se copia: sigue ahí aunque se borre la carpeta.
+    if (const QString error = Extensions::install(dir); !error.isEmpty())
+        QMessageBox::warning(QApplication::activeWindow(), tr("Cargar extensión"), error);
+    emit extensionsChanged();
 }
 
 void InternalApi::setExtensionEnabled(const QString& id, bool enabled)
 {
-    if (auto* manager = extensionManager())
-        for (const QWebEngineExtensionInfo& e : manager->extensions())
-            if (e.id() == id) {
-                manager->setExtensionEnabled(e, enabled);
-                emit extensionsChanged();
-            }
+    Extensions::setEnabled(id, enabled);
+    emit extensionsChanged();
 }
 
 void InternalApi::removeExtension(const QString& id)
 {
-    if (auto* manager = extensionManager())
-        for (const QWebEngineExtensionInfo& e : manager->extensions())
-            if (e.id() == id)
-                e.isInstalled() ? manager->uninstallExtension(e) : manager->unloadExtension(e);
+    Extensions::remove(id);
+    emit extensionsChanged();
 }
 
 QVariantMap InternalApi::about() const
 {
     return {{QStringLiteral("version"), QCoreApplication::applicationVersion()},
             {QStringLiteral("qt"), QString::fromLatin1(qVersion())},
-            {QStringLiteral("chromium"), QString::fromLatin1(qWebEngineChromiumVersion())}};
+            {QStringLiteral("chromium"), engine::chromiumVersion()}};
 }
 
+QVariant InternalApi::call(const QString& method, const QJsonArray& args, bool* ok)
+{
+    // Las páginas sora:// son de Sora, pero lo que llega se valida igual (tipos y número de argumentos).
+    *ok = true;
+    const auto str = [&](int i) { return args.at(i).toString(); };
+    const int n = int(args.size());
+    if (method == QLatin1String("history") && n == 1) return history(str(0));
+    if (method == QLatin1String("removeHistory") && n == 1) { removeHistory(str(0)); return {}; }
+    if (method == QLatin1String("clearHistory") && n == 0) { clearHistory(); return {}; }
+    if (method == QLatin1String("bookmarks") && n == 0) return bookmarks();
+    if (method == QLatin1String("removeBookmark") && n == 1) { removeBookmark(qint64(args.at(0).toDouble())); return {}; }
+    if (method == QLatin1String("renameBookmark") && n == 2) { renameBookmark(qint64(args.at(0).toDouble()), str(1)); return {}; }
+    if (method == QLatin1String("moveBookmark") && n == 2) { moveBookmark(qint64(args.at(0).toDouble()), args.at(1).toInt()); return {}; }
+    if (method == QLatin1String("downloads") && n == 0) return downloads();
+    if (method == QLatin1String("downloadAction") && n == 2) { downloadAction(args.at(0).toInt(), str(1)); return {}; }
+    if (method == QLatin1String("clearDownloads") && n == 0) { clearDownloads(); return {}; }
+    if (method == QLatin1String("settings") && n == 0) return settings();
+    if (method == QLatin1String("setSetting") && n == 2) return setSetting(str(0), args.at(1).toVariant());
+    if (method == QLatin1String("chooseDownloadFolder") && n == 0) return chooseDownloadFolder();
+    if (method == QLatin1String("clearBrowsingData") && n == 3) {
+        clearBrowsingData(args.at(0).toBool(), args.at(1).toBool(), args.at(2).toBool());
+        return {};
+    }
+    if (method == QLatin1String("about") && n == 0) return about();
+    if (method == QLatin1String("extensions") && n == 0) return extensions();
+    if (method == QLatin1String("installExtension") && n == 0) { installExtension(); return {}; }
+    if (method == QLatin1String("loadUnpackedExtension") && n == 0) { loadUnpackedExtension(); return {}; }
+    if (method == QLatin1String("setExtensionEnabled") && n == 2) { setExtensionEnabled(str(0), args.at(1).toBool()); return {}; }
+    if (method == QLatin1String("removeExtension") && n == 1) { removeExtension(str(0)); return {}; }
+    *ok = false;
+    return {};
+}
 void InternalApi::clearDownloads()
 {
     if (m_downloads)

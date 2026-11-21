@@ -1,12 +1,8 @@
 #include "privacy/AdblockService.h"
 
 #include "privacy/AdblockEngine.h"
-#include "privacy/RequestInterceptor.h"
 
 #include <QFile>
-#include <QWebEngineProfile>
-#include <QWebEngineScript>
-#include <QWebEngineScriptCollection>
 
 namespace sora {
 
@@ -14,8 +10,8 @@ AdblockService::AdblockService(QObject* parent)
     : QObject(parent)
     , m_flush(new QTimer(this))
 {
-    // El interceptor corre en el hilo de la interfaz (el mismo de Chromium): por cada petición
-    // bloqueada solo se suma; la interfaz se entera de golpe un poco después.
+    // Cada bloqueo llega del hilo de red de CEF por la cola de Qt: solo se suma; la interfaz se
+    // entera de golpe un poco después.
     m_flush->setSingleShot(true);
     m_flush->setInterval(100);
     connect(m_flush, &QTimer::timeout, this, [this] {
@@ -37,29 +33,16 @@ void AdblockService::setEngine(std::shared_ptr<const AdblockEngine> engine)
     m_engine.store(std::move(engine));
 }
 
-void AdblockService::attach(QWebEngineProfile* profile)
-{
-    auto* interceptor = new RequestInterceptor(this, this);
-    connect(interceptor, &RequestInterceptor::blocked, this, [this](const QUrl&, const QUrl& firstParty) { recordBlocked(firstParty); });
-    profile->setUrlRequestInterceptor(interceptor);
-    m_profiles.append(profile);
-    updateScripts(profile);
-}
-
 void AdblockService::setEnabled(bool enabled)
 {
     m_enabled = enabled;
-    for (const auto& profile : std::as_const(m_profiles))
-        if (profile)
-            updateScripts(profile);
+    updateScript();
 }
 
 void AdblockService::setAllowedSites(const QStringList& sites)
 {
     m_allowed.store(std::make_shared<const QSet<QString>>(sites.cbegin(), sites.cend()));
-    for (const auto& profile : std::as_const(m_profiles))
-        if (profile)
-            updateScripts(profile);
+    updateScript();
 }
 
 QString AdblockService::siteOf(const QUrl& url)
@@ -86,41 +69,29 @@ bool AdblockService::isAllowed(const QUrl& firstParty) const
     return false;
 }
 
-void AdblockService::updateScripts(QWebEngineProfile* profile)
+void AdblockService::updateScript()
 {
     // shortcut: reglas de YouTube escritas a mano; usar los scriptlets de uBlock Origin desde
     // adblock-rust (use_resources) cuando haya una fuente de recursos que se pueda descargar.
-    static const QString kName = QStringLiteral("sora-youtube");
-    QWebEngineScriptCollection* scripts = profile->scripts();
-    for (const QWebEngineScript& s : scripts->find(kName))
-        scripts->remove(s);
-    if (!m_enabled || isAllowed(QUrl(QStringLiteral("https://youtube.com/"))))
-        return;
+    QString script;
     QFile file(QStringLiteral(":/adblock/youtube.js"));
-    if (!file.open(QIODevice::ReadOnly))
+    if (m_enabled && !isAllowed(QUrl(QStringLiteral("https://youtube.com/"))) && file.open(QIODevice::ReadOnly))
+        script = QStringLiteral("if (/(^|\\.)youtube\\.com$/.test(location.hostname)) {\n%1\n}")
+                     .arg(QString::fromUtf8(file.readAll()));
+    if (script == m_youtubeScript)
         return;
-    QWebEngineScript script;
-    script.setName(kName);
-    script.setSourceCode(QString::fromUtf8(file.readAll())); // la cabecera @match limita a youtube.com
-    script.setInjectionPoint(QWebEngineScript::DocumentCreation);
-    script.setWorldId(QWebEngineScript::MainWorld); // tiene que ver los objetos de la propia página
-    script.setRunsOnSubFrames(false);
-    scripts->insert(script);
+    m_youtubeScript = script;
+    emit youtubeScriptChanged();
 }
 
-bool AdblockService::decide(const QUrl& url, const QUrl& firstParty,
-                            QWebEngineUrlRequestInfo::ResourceType type) const
+bool AdblockService::decide(const QUrl& url, const QUrl& firstParty, const char* type) const
 {
-    // Navegar a una web (aunque esté en una lista) siempre debe funcionar.
-    if (type == QWebEngineUrlRequestInfo::ResourceTypeMainFrame
-        || type == QWebEngineUrlRequestInfo::ResourceTypeNavigationPreloadMainFrame)
-        return false;
     if (!m_enabled || isAllowed(firstParty))
         return false;
     const auto engine = m_engine.load();
     if (!engine)
         return false; // el motor aún se está cargando
-    return engine->shouldBlock(url, firstParty, adblockRequestType(type));
+    return engine->shouldBlock(url, firstParty, type);
 }
 
 } // namespace sora

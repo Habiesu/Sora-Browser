@@ -7,11 +7,8 @@
 #include <QTimer>
 #include <QStringList>
 #include <QUrl>
-#include <QWebEngineUrlRequestInfo>
 #include <atomic>
 #include <memory>
-
-class QWebEngineProfile;
 
 namespace sora {
 
@@ -34,25 +31,26 @@ public:
     void setAllowedSites(const QStringList& sites);
     // El sitio de una dirección tal como se guarda en esa lista: el host sin "www.".
     static QString siteOf(const QUrl& url);
-    bool decide(const QUrl& url, const QUrl& firstParty, QWebEngineUrlRequestInfo::ResourceType type) const;
-    // Pone el interceptor en el perfil: así se bloquea también lo que no sale de una página
-    // (service workers). Los bloqueos se avisan agrupados con blockedOnSite(). También pone el script que quita los
-    // anuncios de YouTube (resources/adblock/youtube.js).
-    void attach(QWebEngineProfile* profile);
+    // ¿Bloquear esta petición? type es el de adblock-rust ("script", "image"...). Seguro entre hilos.
+    bool decide(const QUrl& url, const QUrl& firstParty, const char* type) const;
+    // Script que quita los anuncios de YouTube (resources/adblock/youtube.js), ya limitado a
+    // youtube.com; vacío si el escudo está apagado ahí. Las pestañas lo ponen en cada página.
+    QString youtubeScript() const { return m_youtubeScript; }
 
 signals:
     // Bloqueos agrupados por sitio, como mucho cada 100 ms (no uno por petición).
     void blockedOnSite(const QString& host, int count);
+    void youtubeScriptChanged();
 
 private:
     std::atomic<std::shared_ptr<const AdblockEngine>> m_engine;
     std::atomic<bool> m_enabled{true};
     std::atomic<std::shared_ptr<const QSet<QString>>> m_allowed; // se lee desde el hilo de red
     bool isAllowed(const QUrl& firstParty) const;
-    QList<QPointer<QWebEngineProfile>> m_profiles;
     QHash<QString, int> m_pending; // bloqueos aún sin avisar, por sitio
     QTimer* m_flush;
-    void updateScripts(QWebEngineProfile* profile);
+    QString m_youtubeScript;
+    void updateScript();
 };
 
 } // namespace sora

@@ -1,11 +1,27 @@
-// Conecta la página interna con Sora: window.sora (QWebChannel). Llama a onSora(fn) para usarlo.
+// Conecta la página interna con Sora: window.sora (por window.cefQuery de CEF, solo en sora://).
+// Misma forma que tenía con QWebChannel: sora.metodo(args..., callback) y sora.señal.connect(fn).
+// Llama a onSora(fn) para usarlo.
 (function () {
-  const waiting = [];
-  window.onSora = function (fn) { window.sora ? fn(window.sora) : waiting.push(fn); };
-  new QWebChannel(qt.webChannelTransport, function (channel) {
-    window.sora = channel.objects.sora;
-    waiting.splice(0).forEach(function (fn) { fn(window.sora); });
+  const signals = ['bookmarksChanged', 'downloadsChanged', 'extensionsChanged'];
+  function query(request, persistent, done) {
+    window.cefQuery({
+      request: JSON.stringify(request), persistent: persistent,
+      onSuccess: function (r) { done(r ? JSON.parse(r)[0] : undefined); },
+      onFailure: function (code, message) { console.error('sora:', message); }
+    });
+  }
+  window.sora = new Proxy({}, {
+    get: function (_, name) {
+      if (signals.indexOf(name) >= 0)
+        return { connect: function (fn) { query({ subscribe: name }, true, function () { fn(); }); } };
+      return function () {
+        const args = Array.prototype.slice.call(arguments);
+        const callback = typeof args[args.length - 1] === 'function' ? args.pop() : null;
+        query({ method: name, args: args }, false, function (r) { if (callback) callback(r); });
+      };
+    }
   });
+  window.onSora = function (fn) { fn(window.sora); };
 })();
 
 // Utilidades comunes

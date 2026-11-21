@@ -8,9 +8,22 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-find_package(Qt6 6.12 REQUIRED COMPONENTS Core Gui Widgets Network WebEngineCore WebEngineWidgets Concurrent PrintSupport Sql WebChannel Test)
+find_package(Qt6 6.12 REQUIRED COMPONENTS Core Gui Widgets Network Concurrent Sql Test)
 qt_standard_project_setup()
 add_compile_definitions(SORA_VERSION="${PROJECT_VERSION}")
+
+# Motor: CEF (scripts/fetch-cef.py lo deja en .cef/ y apunta la versión en .cef/current.txt).
+if(NOT CEF_ROOT AND EXISTS "${CMAKE_SOURCE_DIR}/.cef/current.txt")
+  file(READ "${CMAKE_SOURCE_DIR}/.cef/current.txt" _cef)
+  string(STRIP "${_cef}" _cef)
+  set(CEF_ROOT "${CMAKE_SOURCE_DIR}/.cef/${_cef}")
+endif()
+file(TO_CMAKE_PATH "${CEF_ROOT}" CEF_ROOT)
+set(CEF_RUNTIME_LIBRARY_FLAG "/MD" CACHE STRING "" FORCE) # el mismo runtime que Qt
+list(APPEND CMAKE_MODULE_PATH "${CEF_ROOT}/cmake")
+find_package(CEF REQUIRED)
+add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
+ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
 
 include(FetchContent)
 FetchContent_Declare(Corrosion

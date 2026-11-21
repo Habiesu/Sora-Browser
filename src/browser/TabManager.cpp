@@ -7,7 +7,7 @@
 
 namespace sora {
 
-TabManager::TabManager(QWebEngineProfile* profile, const AdblockService* adblock, QStackedWidget* stack,
+TabManager::TabManager(Profile* profile, const AdblockService* adblock, QStackedWidget* stack,
                        QObject* parent)
     : QObject(parent)
     , m_profile(profile)
@@ -33,13 +33,13 @@ Tab* TabManager::newTab(const QUrl& url, int index, bool activate)
 
 void TabManager::adoptTab(Tab* tab, int index, bool activate)
 {
-    tab->onCreateWindow = [this, tab](QWebEnginePage::WebWindowType type) {
-        return newTab({}, indexOf(tab) + 1, type != QWebEnginePage::WebBrowserBackgroundTab);
+    tab->onCreateWindow = [this, tab](const QUrl& url, bool background) {
+        return newTab(url, indexOf(tab) + 1, !background);
     };
-    connect(tab, &QWebEngineView::titleChanged, this,
+    connect(tab, &Tab::titleChanged, this,
             [this, tab](const QString& title) { emit tabTitleChanged(indexOf(tab), title); });
-    connect(tab->page(), &QWebEnginePage::windowCloseRequested, this, [this, tab] { closeTab(indexOf(tab)); });
-    connect(tab, &QWebEngineView::iconChanged, this,
+    connect(tab, &Tab::windowCloseRequested, this, [this, tab] { closeTab(indexOf(tab)); });
+    connect(tab, &Tab::iconChanged, this,
             [this, tab](const QIcon& icon) { emit tabIconChanged(indexOf(tab), icon); });
 
     if (index < 0 || index > count())
@@ -80,9 +80,17 @@ Tab* TabManager::removeTab(int index, bool keep)
         // Se va a otra ventana: sin conexiones con esta y fuera del stack antes de avisar (si era la
         // última, la ventana se cierra y no debe llevársela por delante).
         t->disconnect(this);
-        t->page()->disconnect(this);
         t->onCreateWindow = nullptr;
-        t->setParent(nullptr);
+        // Sin padre, Qt destruiría su ventana nativa y con ella la del navegador CEF: espera en un
+        // aparcamiento oculto hasta que la adopte la otra ventana.
+        static QWidget* parking = [] {
+            auto* w = new QWidget;
+            w->setAttribute(Qt::WA_NativeWindow);
+            w->setAttribute(Qt::WA_DontShowOnScreen);
+            w->winId();
+            return w;
+        }();
+        t->setParent(parking);
     }
     if (count() && wasCurrent)
         m_stack->setCurrentWidget(m_order[std::min(index, count() - 1)]);
