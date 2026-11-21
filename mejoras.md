@@ -23,6 +23,9 @@ Lista viva de cosas vistas al trabajar en Sora que no son urgentes. Al hacer una
 - **El botón «+» no sigue a las pestañas al arrastrarlas**: mientras se arrastra una pestaña, el «+»
   se queda quieto en su sitio; solo se recoloca junto a la última pestaña al abrir otra. En Chrome
   va siempre pegado a la última pestaña, también durante el arrastre.
+- **El escudo verde no hace nada al pulsarlo**: debería abrir un panel como el de Brave Shields,
+  con el número de anuncios y rastreadores bloqueados en esa página y un interruptor para desactivar
+  el bloqueador solo en ese sitio (se recarga la página y Sora lo recuerda), más un enlace a Ajustes.
 - **El icono del puzle** se parece a una nube a 16 px; redibujarlo.
 - **Al cambiar a otra pestaña desde la barra**, la nueva pestaña vacía se queda abierta (Chrome la
   cierra).
