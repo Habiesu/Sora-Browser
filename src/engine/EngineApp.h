@@ -1,6 +1,7 @@
 #pragma once
 // Parte de CEF que comparten sora.exe y sora-helper.exe (sin Qt): el esquema sora:// tiene que
 // registrarse igual en todos los procesos, y el renderer pone window.cefQuery para el puente.
+#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -25,13 +26,20 @@ public:
 
     // Renderer
     void OnWebKitInitialized() override;
+    void OnBrowserCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDictionaryValue> extraInfo) override;
+    void OnBrowserDestroyed(CefRefPtr<CefBrowser> browser) override;
     void OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context) override;
     void OnContextReleased(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context) override;
     bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefProcessId source,
                                   CefRefPtr<CefProcessMessage> message) override;
 
+    // Script de YouTube por navegador: llega en extra_info al crearlo ("youtube") y con el mensaje
+    // kYoutubeScriptMessage al cambiar el escudo. Se ejecuta al crear el contexto de la página.
+    static constexpr const char* kYoutubeScriptMessage = "sora-youtube";
+
 private:
     CefRefPtr<CefMessageRouterRendererSide> m_router;
+    std::map<int, std::string> m_youtube; // hilo del renderer
     IMPLEMENT_REFCOUNTING(EngineApp);
 };
 

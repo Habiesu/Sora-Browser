@@ -187,7 +187,9 @@ void installInternalPages(Profile* profile)
         refreshSearch();
         QObject::connect(&Settings::instance(), &Settings::changed, [] { refreshSearch(); });
     }
-    profile->context()->RegisterSchemeHandlerFactory("sora", "", new SchemeFactory);
+    profile->onContextCreated([](CefRefPtr<CefRequestContext> context) {
+        context->RegisterSchemeHandlerFactory("sora", "", new SchemeFactory);
+    });
 }
 
 void setInternalApi(InternalApi* api)

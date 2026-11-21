@@ -21,7 +21,14 @@ endif()
 file(TO_CMAKE_PATH "${CEF_ROOT}" CEF_ROOT)
 set(CEF_RUNTIME_LIBRARY_FLAG "/MD" CACHE STRING "" FORCE) # el mismo runtime que Qt
 list(APPEND CMAKE_MODULE_PATH "${CEF_ROOT}/cmake")
+# FindCEF vacía CMAKE_CXX_FLAGS*: sin esto Sora se compilaba sin /O2 ni NDEBUG (y saltaban los DCHECK de CEF).
+set(_sora_cxx "${CMAKE_CXX_FLAGS}")
+set(_sora_cxx_release "${CMAKE_CXX_FLAGS_RELEASE}")
+set(_sora_cxx_debug "${CMAKE_CXX_FLAGS_DEBUG}")
 find_package(CEF REQUIRED)
+set(CMAKE_CXX_FLAGS "${_sora_cxx}")
+set(CMAKE_CXX_FLAGS_RELEASE "${_sora_cxx_release}")
+set(CMAKE_CXX_FLAGS_DEBUG "${_sora_cxx_debug}")
 add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
 ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
 

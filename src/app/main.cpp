@@ -86,12 +86,6 @@ int main(int argc, char* argv[])
     }
     mark("instancia unica");
 
-    if (!sora::engine::start()) {
-        QMessageBox::critical(nullptr, QStringLiteral("Sora"), QStringLiteral("No se pudo arrancar el motor web (CEF)."));
-        return 1;
-    }
-    mark("CEF");
-
     int code = 0;
     {
         auto* adblock = new sora::AdblockService(&app);
@@ -100,9 +94,16 @@ int main(int argc, char* argv[])
         mark("perfil + adblock + paginas internas");
 
         sora::Browser browser(profile, adblock);
+        mark("Browser");
         sora::MainWindow* window = browser.showFirstWindow();
         const qint64 windowShownMs = sinceStart.elapsed(); // la ventana ya está en pantalla
         mark("ventana en pantalla");
+        // CEF arranca con la ventana ya a la vista (sus procesos le quitaban tiempo al pintarla).
+        if (!sora::engine::start()) {
+            QMessageBox::critical(window, QStringLiteral("Sora"), QStringLiteral("No se pudo arrancar el motor web (CEF)."));
+            return 1;
+        }
+        mark("CEF");
         // La primera pestaña nace ya con su dirección.
         const sora::Settings& settings = sora::Settings::instance();
         const QString homepage = settings.value(QStringLiteral("homepage")).toString();

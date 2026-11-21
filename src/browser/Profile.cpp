@@ -84,8 +84,16 @@ Profile::Profile(bool incognito, AdblockService* adblock, QObject* parent)
     , m_incognito(incognito)
     , m_adblock(adblock)
 {
-    CefRefPtr<RequestHandler> handler = new RequestHandler(adblock);
-    if (incognito) {
+}
+
+CefRefPtr<CefRequestContext> Profile::context()
+{
+    // Se crea al usarlo por primera vez (la primera pestaña): así CEF puede arrancar después de
+    // mostrar la ventana.
+    if (m_context)
+        return m_context;
+    CefRefPtr<RequestHandler> handler = new RequestHandler(m_adblock);
+    if (m_incognito) {
         CefRequestContextSettings settings; // sin cache_path: todo en memoria
         m_context = CefRequestContext::CreateContext(settings, handler);
     } else {
@@ -100,13 +108,15 @@ Profile::Profile(bool incognito, AdblockService* adblock, QObject* parent)
         value->SetInt(1);
         context->SetPreference("profile.cookie_controls_mode", value, error);
     });
+    for (const auto& hook : m_onContext)
+        hook(m_context);
+    return m_context;
 }
-
 Profile::~Profile() = default;
 
 void Profile::clearCookies()
 {
-    if (CefRefPtr<CefCookieManager> cookies = m_context->GetCookieManager(nullptr))
+    if (CefRefPtr<CefCookieManager> cookies = context()->GetCookieManager(nullptr))
         cookies->DeleteCookies("", "", nullptr);
 }
 

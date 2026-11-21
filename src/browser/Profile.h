@@ -1,6 +1,8 @@
 #pragma once
 #include <QObject>
 #include <QPointer>
+#include <functional>
+#include <vector>
 
 #include "include/cef_request_context.h"
 
@@ -19,7 +21,10 @@ public:
     ~Profile() override;
 
     bool isOffTheRecord() const { return m_incognito; }
-    CefRefPtr<CefRequestContext> context() const { return m_context; }
+    // Se crea la primera vez (CEF tiene que estar arrancado).
+    CefRefPtr<CefRequestContext> context();
+    // Se llama al crear el contexto (p. ej. para registrar sora://).
+    void onContextCreated(std::function<void(CefRefPtr<CefRequestContext>)> hook) { m_onContext.push_back(std::move(hook)); }
     AdblockService* adblock() const { return m_adblock; }
     DownloadManager* downloads() const { return m_downloads; }
     void setDownloads(DownloadManager* downloads) { m_downloads = downloads; }
@@ -33,6 +38,7 @@ private:
     AdblockService* m_adblock; // los dos viven tanto como la aplicación
     DownloadManager* m_downloads = nullptr;
     CefRefPtr<CefRequestContext> m_context;
+    std::vector<std::function<void(CefRefPtr<CefRequestContext>)>> m_onContext;
 };
 
 // Ruta del aviso "borrar la caché al arrancar" (lo mira Engine::start).

@@ -2,11 +2,14 @@
 
 #include <QApplication>
 #include <QClipboard>
+#include <QDir>
 #include <QFile>
+#include <QFocusEvent>
 #include <QKeySequence>
 #include <QPixmap>
 #include <QShortcut>
 #include <atomic>
+#include <cstdio>
 #include <cmath>
 #include <map>
 
@@ -14,6 +17,7 @@
 #include "include/cef_parser.h"
 
 #include "browser/DownloadManager.h"
+#include "engine/EngineApp.h"
 #include "browser/Engine.h"
 #include "browser/Profile.h"
 #include "privacy/AdblockService.h"
@@ -61,6 +65,28 @@ int keyCombination(const CefKeyEvent& e)
     if (e.modifiers & EVENTFLAG_ALT_DOWN) key |= Qt::AltModifier;
     return key;
 }
+
+#ifdef Q_OS_WIN
+// Windows deja el foco del teclado en la ventana de CEF (otro hilo) aunque se pulse un control de Qt
+// (barra de direcciones, buscar...): Qt no ve cambio de foco si ese control ya lo tenía para él.
+// Al pulsar o enfocar algo de Qt que no sea la web, el foco vuelve a la ventana de Qt.
+class FocusGuard : public QObject {
+public:
+    using QObject::QObject;
+    bool eventFilter(QObject* object, QEvent* event) override
+    {
+        if (event->type() != QEvent::MouseButtonPress && event->type() != QEvent::FocusIn)
+            return false;
+        auto* widget = qobject_cast<QWidget*>(object);
+        if (!widget || qobject_cast<Tab*>(widget) || !widget->window()->internalWinId())
+            return false;
+        const HWND focus = ::GetFocus();
+        if (focus && GetWindowThreadProcessId(focus, nullptr) != GetCurrentThreadId())
+            ::SetFocus(reinterpret_cast<HWND>(widget->window()->winId()));
+        return false;
+    }
+};
+#endif
 
 // Ventanas que abre CEF por su cuenta (emergentes con opener, como los inicios de sesión, y las
 // herramientas para desarrolladores): solo se cuentan para apagar CEF a tiempo.
@@ -116,7 +142,7 @@ public:
     Profile* m_profile; // vive tanto como sus ventanas
     std::atomic<bool> closing{false}; // la pestaña ya no existe: cerrar el navegador en cuanto nazca
     std::atomic<bool> loading{false};
-    std::string youtubeScript; // hilo de CEF
+    std::atomic<bool> focused{false}; // la pestaña tiene el foco en Qt
 
     // Corre f en el hilo de Qt si la pestaña sigue viva.
     void post(std::function<void(Tab*)> f)
@@ -150,7 +176,6 @@ public:
         engine::browserCreated();
         m_browserUi = browser;
         m_devtools = browser->GetHost()->AddDevToolsMessageObserver(this);
-        applyYoutubeScript();
         if (closing) { // la pestaña se cerró antes de que el navegador existiera
             browser->GetHost()->CloseBrowser(true);
             return;
@@ -316,6 +341,13 @@ public:
         post([active, count](Tab* t) { emit t->findResult(active, count); });
     }
 
+    bool OnSetFocus(CefRefPtr<CefBrowser>, FocusSource source) override
+    {
+        // Al cargar una página CEF se da el foco solo; así le quitaría la barra de direcciones a quien
+        // está escribiendo (nueva pestaña). Solo se deja si la pestaña ya tiene el foco en Qt.
+        return source == FOCUS_SOURCE_NAVIGATION && !focused;
+    }
+
     void OnGotFocus(CefRefPtr<CefBrowser>) override
     {
         post([](Tab* t) {
@@ -349,8 +381,10 @@ public:
         engine::onQt([profile, id, name, url, callback] {
             DownloadManager* downloads = profile->downloads();
             const QString path = downloads ? downloads->begin(id, name, url, profile->isOffTheRecord()) : QString();
-            if (!path.isEmpty())
-                callback->Continue(path.toStdWString(), false);
+            if (path.isEmpty())
+                return;
+            const std::wstring native = QDir::toNativeSeparators(path).toStdWString(); // Chromium quiere "\"
+            engine::onUi([callback, native] { callback->Continue(native, false); });
         });
         return true;
     }
@@ -404,26 +438,7 @@ public:
         return false;
     }
 
-    // --- Protocolo de DevTools (script de YouTube, guardar página) ---
-    void applyYoutubeScript() // hilo de CEF
-    {
-        if (!m_browserUi)
-            return;
-        CefRefPtr<CefBrowserHost> host = m_browserUi->GetHost();
-        if (!m_youtubeId.empty()) {
-            CefRefPtr<CefDictionaryValue> params = CefDictionaryValue::Create();
-            params->SetString("identifier", m_youtubeId);
-            host->ExecuteDevToolsMethod(++m_nextMessage, "Page.removeScriptToEvaluateOnNewDocument", params);
-            m_youtubeId.clear();
-        }
-        if (youtubeScript.empty())
-            return;
-        CefRefPtr<CefDictionaryValue> params = CefDictionaryValue::Create();
-        params->SetString("source", youtubeScript);
-        m_youtubeMessage = ++m_nextMessage;
-        host->ExecuteDevToolsMethod(m_youtubeMessage, "Page.addScriptToEvaluateOnNewDocument", params);
-    }
-
+    // --- Protocolo de DevTools (guardar página) ---
     void savePage(const QString& path) // hilo de CEF
     {
         if (!m_browserUi)
@@ -439,10 +454,6 @@ public:
     {
         CefRefPtr<CefValue> value = success ? CefParseJSON(result, size, JSON_PARSER_RFC) : nullptr;
         CefRefPtr<CefDictionaryValue> dict = value ? value->GetDictionary() : nullptr;
-        if (id == m_youtubeMessage) {
-            m_youtubeId = dict ? dict->GetString("identifier").ToString() : std::string();
-            return;
-        }
         const auto save = m_saves.find(id);
         if (save == m_saves.end())
             return;
@@ -460,8 +471,6 @@ public:
 
 private:
     CefRefPtr<CefRegistration> m_devtools;
-    std::string m_youtubeId;
-    int m_youtubeMessage = 0;
     int m_nextMessage = 1000;
     std::map<int, QString> m_saves;
     IMPLEMENT_REFCOUNTING(Client);
@@ -476,6 +485,14 @@ Tab::Tab(Profile* profile, QWidget* parent)
     setAttribute(Qt::WA_NoSystemBackground);
     setAttribute(Qt::WA_OpaquePaintEvent);
     setFocusPolicy(Qt::StrongFocus);
+#ifdef Q_OS_WIN
+    static FocusGuard* guard = [] {
+        auto* g = new FocusGuard(qApp);
+        qApp->installEventFilter(g);
+        return g;
+    }();
+    Q_UNUSED(guard);
+#endif
     if (AdblockService* adblock = profile->adblock())
         connect(adblock, &AdblockService::youtubeScriptChanged, this, &Tab::updateYoutubeScript);
 }
@@ -505,9 +522,11 @@ void Tab::createBrowser(const QUrl& url)
 #endif
     info.runtime_style = CEF_RUNTIME_STYLE_ALLOY; // la interfaz es la de Sora
     AdblockService* adblock = m_profile->adblock();
-    m_client->youtubeScript = adblock ? adblock->youtubeScript().toStdString() : std::string();
+    // El renderer pone el script de YouTube antes que los de la página (EngineApp::OnContextCreated).
+    CefRefPtr<CefDictionaryValue> extra = CefDictionaryValue::Create();
+    extra->SetString("youtube", adblock ? adblock->youtubeScript().toStdWString() : std::wstring());
     CefBrowserSettings settings;
-    CefBrowserHost::CreateBrowser(info, m_client, url.toString().toStdWString(), settings, nullptr, m_profile->context());
+    CefBrowserHost::CreateBrowser(info, m_client, url.toString().toStdWString(), settings, extra, m_profile->context());
 }
 
 void Tab::setUrl(const QUrl& url)
@@ -603,15 +622,15 @@ void Tab::countBlocked(int count)
 
 void Tab::updateYoutubeScript()
 {
+    // shortcut: llega al proceso de la página actual; si una navegación abre otro proceso, ese usa el
+    // script de cuando se creó la pestaña. Mandarlo también desde OnRenderViewReady si pasa a menudo.
+    if (!m_browser)
+        return;
     AdblockService* adblock = m_profile->adblock();
-    const std::string script = adblock ? adblock->youtubeScript().toStdString() : std::string();
-    CefRefPtr<Client> client = m_client;
-    engine::onUi([client, script] {
-        client->youtubeScript = script;
-        client->applyYoutubeScript();
-    });
+    CefRefPtr<CefProcessMessage> message = CefProcessMessage::Create(EngineApp::kYoutubeScriptMessage);
+    message->GetArgumentList()->SetString(0, adblock ? adblock->youtubeScript().toStdWString() : std::wstring());
+    m_browser->GetMainFrame()->SendProcessMessage(PID_RENDERER, message);
 }
-
 void Tab::triggerShortcut(int keyCombination)
 {
     const QKeySequence keys(keyCombination);
@@ -633,6 +652,18 @@ void Tab::fitBrowser()
 #endif
 }
 
+void Tab::focusOutEvent(QFocusEvent* event)
+{
+    QWidget::focusOutEvent(event);
+    m_client->focused = false;
+#ifdef Q_OS_WIN
+    // El foco pasa a otro control de Sora (barra de direcciones...): Windows lo tenía en la ventana
+    // de CEF y las teclas seguirían yendo a la web. Se devuelve a la ventana de Qt.
+    if (event->reason() != Qt::ActiveWindowFocusReason && event->reason() != Qt::PopupFocusReason)
+        ::SetFocus(reinterpret_cast<HWND>(window()->winId()));
+#endif
+}
+
 void Tab::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
@@ -642,6 +673,7 @@ void Tab::resizeEvent(QResizeEvent* event)
 void Tab::focusInEvent(QFocusEvent* event)
 {
     QWidget::focusInEvent(event);
+    m_client->focused = true;
     if (m_browser)
         m_browser->GetHost()->SetFocus(true); // el teclado va a la web, no al HWND de Qt
 }
