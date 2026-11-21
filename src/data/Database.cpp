@@ -18,6 +18,9 @@ QString openDatabase(const QString& path, const QString& owner, const QString& s
         qWarning("No se pudo abrir %s: %s", qPrintable(path), qPrintable(db.lastError().text()));
     QSqlQuery q(db);
     q.exec(QStringLiteral("PRAGMA journal_mode=WAL")); // dos almacenes en el mismo archivo sin bloquearse
+    // Con WAL basta NORMAL: no se corrompe nunca y no espera al disco en cada visita (corre en el hilo de
+    // Chromium); un corte de luz solo podría perder lo último guardado.
+    q.exec(QStringLiteral("PRAGMA synchronous=NORMAL"));
     for (const QString& statement : schema.split(QLatin1Char(';'), Qt::SkipEmptyParts))
         if (!statement.trimmed().isEmpty() && !q.exec(statement))
             qWarning("SQL: %s", qPrintable(q.lastError().text()));
