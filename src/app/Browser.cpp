@@ -103,7 +103,10 @@ void Browser::applySettings()
                                                   : theme == QLatin1String("light") ? Qt::ColorScheme::Light
                                                                                     : Qt::ColorScheme::Unknown);
     if (m_adblock)
+    {
         m_adblock->setEnabled(s.value(QStringLiteral("adblock")).toBool());
+        m_adblock->setAllowedSites(s.value(QStringLiteral("adblockAllowed")).toStringList());
+    }
     const QString downloads = s.value(QStringLiteral("downloadPath")).toString();
     for (QWebEngineProfile* p : {m_profile, m_incognito})
         if (p)

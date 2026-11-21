@@ -30,15 +30,18 @@ protected:
     void resizeEvent(QResizeEvent* event) override;
     void mousePressEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
     void paintEvent(QPaintEvent* event) override;
 
 private:
     bool m_dragging = false;
+    int m_pressX = 0;       // dónde se pulsó la pestaña que se arrastra
+    int m_pressTabRight = 0; // y dónde acababa entonces
     QToolButton* m_plus;
     QProxyStyle* m_style;
     QColor m_closeColor;
     QColor m_lineColor;
-    void placePlus();
+    void placePlus(int draggedRight = -1);
 };
 
 } // namespace sora

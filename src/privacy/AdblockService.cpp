@@ -37,6 +37,38 @@ void AdblockService::setEnabled(bool enabled)
             updateScripts(profile);
 }
 
+void AdblockService::setAllowedSites(const QStringList& sites)
+{
+    m_allowed.store(std::make_shared<const QSet<QString>>(sites.cbegin(), sites.cend()));
+    for (const auto& profile : std::as_const(m_profiles))
+        if (profile)
+            updateScripts(profile);
+}
+
+QString AdblockService::siteOf(const QUrl& url)
+{
+    QString host = url.host().toLower();
+    if (host.startsWith(QLatin1String("www.")))
+        host.remove(0, 4);
+    return host;
+}
+
+bool AdblockService::isAllowed(const QUrl& firstParty) const
+{
+    const auto allowed = m_allowed.load();
+    if (!allowed || allowed->isEmpty())
+        return false;
+    // blog.lobos.test → lobos.test → test
+    QString host = siteOf(firstParty);
+    while (!host.isEmpty()) {
+        if (allowed->contains(host))
+            return true;
+        const qsizetype dot = host.indexOf(QLatin1Char('.'));
+        host = dot < 0 ? QString() : host.mid(dot + 1);
+    }
+    return false;
+}
+
 void AdblockService::updateScripts(QWebEngineProfile* profile)
 {
     // shortcut: reglas de YouTube escritas a mano; usar los scriptlets de uBlock Origin desde
@@ -45,7 +77,7 @@ void AdblockService::updateScripts(QWebEngineProfile* profile)
     QWebEngineScriptCollection* scripts = profile->scripts();
     for (const QWebEngineScript& s : scripts->find(kName))
         scripts->remove(s);
-    if (!m_enabled)
+    if (!m_enabled || isAllowed(QUrl(QStringLiteral("https://youtube.com/"))))
         return;
     QFile file(QStringLiteral(":/adblock/youtube.js"));
     if (!file.open(QIODevice::ReadOnly))
@@ -66,7 +98,7 @@ bool AdblockService::decide(const QUrl& url, const QUrl& firstParty,
     if (type == QWebEngineUrlRequestInfo::ResourceTypeMainFrame
         || type == QWebEngineUrlRequestInfo::ResourceTypeNavigationPreloadMainFrame)
         return false;
-    if (!m_enabled)
+    if (!m_enabled || isAllowed(firstParty))
         return false;
     const auto engine = m_engine.load();
     if (!engine)

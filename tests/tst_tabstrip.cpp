@@ -207,6 +207,39 @@ private slots:
             if (b->isVisible() && b != plusOf(bar) && b->objectName() != "TabCloseButton")
                 QVERIFY2(!b->geometry().intersects(plus), "tapa una flecha");
     }
+    void plusIsCenteredAndNearlyTabHigh()
+    {
+        // Como en Chrome: un círculo centrado en la pestaña visible y casi de su alto.
+        QWidget host;
+        host.setStyleSheet(sora::nieblaStyleSheet(sora::nieblaPalette(Qt::ColorScheme::Dark)));
+        TabStrip bar(&host);
+        bar.addTab("A");
+        host.resize(1200, 40);
+        bar.resize(1200, 40);
+        host.show();
+        const QRect tab = bar.tabRect(0).adjusted(0, 6, 0, 0);
+        const QRect plus = plusOf(bar)->geometry();
+        QVERIFY2(qAbs(plus.center().y() - tab.center().y()) <= 1,
+                 qPrintable(QString("+ en y=%1, pestaña en y=%2").arg(plus.center().y()).arg(tab.center().y())));
+        QVERIFY(plus.height() >= tab.height() - 4);
+        QCOMPARE(plus.width(), plus.height());
+    }
+    void plusFollowsDraggedTab()
+    {
+        TabStrip bar;
+        bar.addTab("A"); bar.addTab("B");
+        bar.resize(1200, 40);
+        bar.show();
+        const int restingX = plusOf(bar)->x();
+        const QPoint start = bar.tabRect(1).center();
+        QTest::mousePress(&bar, Qt::LeftButton, {}, start);
+        QTest::mouseMove(&bar, start + QPoint(40, 0));
+        QTest::mouseMove(&bar, start + QPoint(200, 0));
+        QVERIFY2(plusOf(bar)->x() >= restingX + 150,
+                 qPrintable(QString("+ en x=%1, antes en x=%2").arg(plusOf(bar)->x()).arg(restingX)));
+        QTest::mouseRelease(&bar, Qt::LeftButton, {}, start + QPoint(200, 0));
+        QTRY_COMPARE(plusOf(bar)->x(), restingX); // al soltar vuelve tras la última pestaña
+    }
     void plusStaysVisible()
     {
         TabStrip bar;

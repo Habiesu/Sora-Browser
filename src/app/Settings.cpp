@@ -41,13 +41,16 @@ QVariant defaultFor(const QString& key)
         return QStringLiteral("system");
     if (key == QLatin1String("adblock"))
         return true;
+    if (key == QLatin1String("adblockAllowed"))
+        return QStringList();
     if (key == QLatin1String("downloadPath"))
         return QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
     return {};
 }
 
 const QStringList kKeys = {QStringLiteral("search"), QStringLiteral("startup"), QStringLiteral("homepage"),
-                           QStringLiteral("theme"), QStringLiteral("adblock"), QStringLiteral("downloadPath")};
+                           QStringLiteral("theme"), QStringLiteral("adblock"), QStringLiteral("adblockAllowed"),
+                           QStringLiteral("downloadPath")};
 } // namespace
 
 Settings& Settings::instance()
@@ -66,6 +69,8 @@ QVariant Settings::value(const QString& key) const
 {
     if (key == QLatin1String("adblock")) // el .ini guarda texto: "true"/"false"
         return m_store.value(key, true).toBool();
+    if (key == QLatin1String("adblockAllowed")) // vacía o de un solo sitio el .ini no la guarda como lista
+        return m_store.value(key).toStringList();
     return m_store.value(key, defaultFor(key));
 }
 
@@ -92,6 +97,10 @@ bool Settings::setValue(const QString& key, const QVariant& value)
         ok = text == QLatin1String("system") || text == QLatin1String("light") || text == QLatin1String("dark");
     } else if (key == QLatin1String("adblock")) {
         ok = value.typeId() == QMetaType::Bool;
+    } else if (key == QLatin1String("adblockAllowed")) {
+        ok = value.canConvert<QStringList>();
+        for (const QString& site : value.toStringList())
+            ok = ok && !site.isEmpty() && QUrl(QStringLiteral("https://") + site).host() == site;
     } else if (key == QLatin1String("downloadPath")) {
         ok = !text.isEmpty() && QDir(text).exists();
     }

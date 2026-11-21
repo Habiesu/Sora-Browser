@@ -8,7 +8,7 @@ namespace sora {
 
 // Ajustes del usuario (Sora.ini en la carpeta de datos de la aplicación). Claves:
 // search (duckduckgo|brave|google|bing|startpage), startup (newtab|homepage), homepage (URL http/https),
-// theme (system|light|dark), adblock (bool), downloadPath (carpeta).
+// theme (system|light|dark), adblock (bool), adblockAllowed (sitios sin escudo), downloadPath (carpeta).
 class Settings : public QObject {
     Q_OBJECT
 public:

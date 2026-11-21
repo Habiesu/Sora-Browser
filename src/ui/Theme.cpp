@@ -20,7 +20,7 @@ QTabBar { background: transparent; }
 QTabBar QToolButton { background: @window; border: none; }
 #TabCloseButton { background: transparent; border: none; border-radius: 4px; }
 #TabCloseButton:hover { background: @hover; }
-#NewTabButton { background: transparent; border: none; border-radius: 6px; margin-top: 6px; }
+#NewTabButton { background: transparent; border: none; border-radius: 16px; }
 #NewTabButton:hover { background: @hover; }
 #WindowButton, #CloseButton { background: transparent; border: none; border-radius: 0; }
 #WindowButton:hover, #WindowButton[hovered="true"] { background: @hover; }

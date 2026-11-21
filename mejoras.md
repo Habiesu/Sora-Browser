@@ -23,6 +23,9 @@ Lista viva de cosas vistas al trabajar en Sora que no son urgentes. Al hacer una
 - **El botón «+» no sigue a las pestañas al arrastrarlas**: mientras se arrastra una pestaña, el «+»
   se queda quieto en su sitio; solo se recoloca junto a la última pestaña al abrir otra. En Chrome
   va siempre pegado a la última pestaña, también durante el arrastre.
+- **El botón «+» se ve mal**: no está bien alineado con las pestañas y su resaltado al pasar el ratón
+  queda feo. En Chrome y Brave es un círculo centrado en la altura de la pestaña, con un resaltado
+  de casi el mismo alto que la pestaña.
 - **El escudo verde no hace nada al pulsarlo**: debería abrir un panel como el de Brave Shields,
   con el número de anuncios y rastreadores bloqueados en esa página y un interruptor para desactivar
   el bloqueador solo en ese sitio (se recarga la página y Sora lo recuerda), más un enlace a Ajustes.

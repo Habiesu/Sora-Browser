@@ -28,6 +28,7 @@ Toolbar::Toolbar(QWidget* parent)
     , m_reload(toolButton(this, tr("Recargar (F5)")))
     , m_omnibox(new Omnibox(this))
     , m_shield(toolButton(this, {}))
+    , m_shieldMenu(new QMenu(this))
     , m_star(toolButton(this, tr("Añadir esta página a marcadores (Ctrl+D)")))
     , m_extensions(toolButton(this, tr("Extensiones")))
     , m_extensionsMenu(new QMenu(this))
@@ -42,6 +43,8 @@ Toolbar::Toolbar(QWidget* parent)
     m_shield->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     m_shield->setMinimumWidth(48); // el número crece con los bloqueos
     m_shield->setMaximumWidth(QWIDGETSIZE_MAX);
+    m_shield->setMenu(m_shieldMenu);
+    m_shield->setPopupMode(QToolButton::InstantPopup);
     m_star->setObjectName(QStringLiteral("StarButton"));
     m_star->setCheckable(true);
     connect(m_star, &QToolButton::clicked, this, &Toolbar::starClicked);
@@ -86,8 +89,9 @@ void Toolbar::setNavigation(bool canBack, bool canForward, bool loading)
 
 void Toolbar::setBlockedCount(int count)
 {
-    m_shield->setText(QString::number(count));
-    m_shield->setToolTip(tr("Bloqueados en esta página: %1").arg(count));
+    m_shield->setText(m_shieldActive ? QString::number(count) : QString());
+    m_shield->setToolTip(m_shieldActive ? tr("Bloqueados en esta página: %1").arg(count)
+                                        : tr("El escudo está desactivado en este sitio"));
 }
 
 void Toolbar::setBookmarked(bool bookmarked)
@@ -109,7 +113,7 @@ void Toolbar::refreshIcons()
     m_back->setIcon(icon(Icon::Back, m_palette.text));
     m_forward->setIcon(icon(Icon::Forward, m_palette.text));
     m_reload->setIcon(icon(m_loading ? Icon::Stop : Icon::Reload, m_palette.text));
-    m_shield->setIcon(icon(Icon::Shield, m_palette.shield));
+    m_shield->setIcon(icon(Icon::Shield, m_shieldActive ? m_palette.shield : m_palette.faintText));
     m_star->setIcon(m_star->isChecked() ? icon(Icon::StarFilled, m_palette.shield) : icon(Icon::Star, m_palette.text));
     m_extensions->setIcon(icon(Icon::Puzzle, m_palette.text));
     m_menu->setIcon(icon(Icon::Menu, m_palette.text));
@@ -121,5 +125,11 @@ namespace sora {
 void Toolbar::setExtensionsVisible(bool visible)
 {
     m_extensions->setVisible(visible);
+}
+
+void Toolbar::setShieldActive(bool active)
+{
+    m_shieldActive = active;
+    refreshIcons();
 }
 } // namespace sora

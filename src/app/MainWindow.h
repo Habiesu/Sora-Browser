@@ -49,6 +49,7 @@ public:
     // Aviso breve abajo a la izquierda (p. ej. si fallan las listas de bloqueo).
     void showNotice(const QString& text);
     void openExtensionPopup(QWebEngineProfile* profile, const QUrl& url);
+    void refreshShield(); // escudo gris si está apagado en el sitio de la pestaña actual
 
 signals:
     void newWindowRequested(bool incognito);

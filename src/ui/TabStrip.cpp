@@ -13,8 +13,8 @@ namespace sora {
 namespace {
 constexpr int kMinTab = 60;
 constexpr int kMaxTab = 220;
-constexpr int kPlusSize = 28;
-constexpr int kPlusGap = 6;
+constexpr int kPlusSize = 32; // casi el alto de la pestaña visible (34), como en Chrome
+constexpr int kPlusGap = 4;
 constexpr int kPlusReserve = kPlusSize + 2 * kPlusGap;
 constexpr int kTabTopMargin = 6; // hueco sobre la pestaña: se ve la barra de título
 constexpr int kTabHeight = 40;
@@ -198,12 +198,27 @@ void TabStrip::resizeEvent(QResizeEvent* event)
 
 void TabStrip::mousePressEvent(QMouseEvent* event)
 {
-    m_dragging = event->button() == Qt::LeftButton && tabAt(event->position().toPoint()) >= 0;
+    const int index = tabAt(event->position().toPoint());
+    m_dragging = event->button() == Qt::LeftButton && index >= 0;
+    if (m_dragging) {
+        m_pressX = event->position().toPoint().x();
+        m_pressTabRight = tabRect(index).right();
+    }
     QTabBar::mousePressEvent(event);
+}
+
+void TabStrip::mouseMoveEvent(QMouseEvent* event)
+{
+    QTabBar::mouseMoveEvent(event);
+    // Como en Chrome, el "+" va pegado a la pestaña que se arrastra si pasa de la última.
+    if (m_dragging && (event->buttons() & Qt::LeftButton) && isMovable())
+        placePlus(m_pressTabRight + event->position().toPoint().x() - m_pressX);
 }
 
 void TabStrip::mouseReleaseEvent(QMouseEvent* event)
 {
+    if (event->button() == Qt::LeftButton)
+        QMetaObject::invokeMethod(this, [this] { placePlus(); }, Qt::QueuedConnection); // vuelve a su sitio
     if (event->button() == Qt::LeftButton && m_dragging) {
         m_dragging = false;
         // Soltada lejos de la tira (como en Chrome): a otra ventana o a una nueva. La arrastrada
@@ -225,12 +240,15 @@ void TabStrip::mouseReleaseEvent(QMouseEvent* event)
     QTabBar::mouseReleaseEvent(event);
 }
 
-void TabStrip::placePlus()
+void TabStrip::placePlus(int draggedRight)
 {
-    // Justo tras la última pestaña; si no caben todas, en el hueco reservado tras las flechas.
-    int x = count() ? tabRect(count() - 1).right() + 1 + kPlusGap : kPlusGap;
+    // Justo tras la última pestaña (o tras la que se arrastra, si va más allá); si no caben todas,
+    // en el hueco reservado tras las flechas.
+    const int lastRight = count() ? std::max(tabRect(count() - 1).right(), draggedRight) : -1;
+    int x = lastRight + 1 + kPlusGap;
     x = std::clamp(x, 0, std::max(0, width() - kPlusSize - kPlusGap));
-    m_plus->move(x, (height() - kPlusSize) / 2 + 3);
+    // Centrado en la parte visible de la pestaña (bajo el hueco de la barra de título).
+    m_plus->move(x, kTabTopMargin + (height() - kTabTopMargin - kPlusSize) / 2);
     m_plus->raise();
 }
 

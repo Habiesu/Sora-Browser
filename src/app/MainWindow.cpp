@@ -35,6 +35,7 @@
 #include "app/InternalPages.h"
 #include "app/Settings.h"
 #include "browser/Suggestions.h"
+#include "privacy/AdblockService.h"
 #include "browser/Tab.h"
 #include "data/BookmarkStore.h"
 #include "data/HistoryStore.h"
@@ -221,6 +222,48 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
         if (auto* t = currentTab())
             t->setFocus();
     });
+
+    // Escudo, como Brave Shields: cuántos bloqueos lleva la página y apagarlo solo en este sitio.
+    QMenu* shield = m_toolbar->shieldMenu();
+    connect(shield, &QMenu::aboutToShow, this, [this, shield] {
+        shield->clear();
+        Tab* t = currentTab();
+        const QString site = t ? AdblockService::siteOf(t->url()) : QString();
+        if (site.isEmpty()) {
+            shield->addAction(tr("El escudo no actúa en las páginas de Sora"))->setEnabled(false);
+            return;
+        }
+        Settings& s = Settings::instance();
+        const bool globallyOn = s.value(QStringLiteral("adblock")).toBool();
+        QStringList allowed = s.value(QStringLiteral("adblockAllowed")).toStringList();
+        QAction* title = shield->addAction(tr("Escudo de Sora en %1").arg(site));
+        QFont bold = title->font();
+        bold.setBold(true);
+        title->setFont(bold);
+        title->setEnabled(false);
+        shield->addAction(tr("%1 anuncios y rastreadores bloqueados en esta página").arg(t->blockedCount()))->setEnabled(false);
+        shield->addSeparator();
+        QAction* toggle = shield->addAction(tr("Bloquear anuncios y rastreadores en este sitio"));
+        toggle->setCheckable(true);
+        toggle->setChecked(globallyOn && !allowed.contains(site));
+        toggle->setEnabled(globallyOn);
+        if (!globallyOn)
+            shield->addAction(tr("El bloqueador está desactivado para todos los sitios en Ajustes"))->setEnabled(false);
+        connect(toggle, &QAction::toggled, this, [this, site, allowed](bool on) mutable {
+            if (on)
+                allowed.removeAll(site);
+            else if (!allowed.contains(site))
+                allowed.append(site);
+            Settings::instance().setValue(QStringLiteral("adblockAllowed"), allowed);
+            refreshShield();
+            if (Tab* tab = currentTab())
+                tab->reload(); // como Brave: la página se vuelve a cargar con el cambio
+        });
+        shield->addSeparator();
+        connect(shield->addAction(tr("Ajustes de privacidad")), &QAction::triggered, this,
+                [this] { openInternal(QUrl(QStringLiteral("sora://settings#privacidad"))); });
+    });
+    connect(&Settings::instance(), &Settings::changed, this, [this] { refreshShield(); });
 
     // Botón de extensiones (puzle), como en Chrome. Incógnito no tiene extensiones.
     m_toolbar->setExtensionsVisible(!m_incognito && profile->extensionManager());
@@ -521,6 +564,16 @@ void MainWindow::toggleBookmark()
         m_bookmarkStore->add(t->url(), t->title());
 }
 
+void MainWindow::refreshShield()
+{
+    Tab* t = currentTab();
+    const QString site = t ? AdblockService::siteOf(t->url()) : QString();
+    const Settings& s = Settings::instance();
+    m_toolbar->setShieldActive(s.value(QStringLiteral("adblock")).toBool()
+                               && !s.value(QStringLiteral("adblockAllowed")).toStringList().contains(site));
+    m_toolbar->setBlockedCount(t ? t->blockedCount() : 0);
+}
+
 void MainWindow::refreshStar()
 {
     Tab* t = currentTab();
@@ -565,6 +618,7 @@ void MainWindow::watchTab(Tab* tab)
     connect(tab, &QWebEngineView::urlChanged, this, ifCurrent([this](const QUrl& url) {
         m_toolbar->omnibox()->setUrl(url);
         refreshStar();
+        refreshShield();
         refreshNavigation();
     }));
     connect(tab, &QWebEngineView::loadStarted, this, ifCurrent([this] { refreshNavigation(); }));
@@ -600,10 +654,11 @@ void MainWindow::showCurrentTab()
         return;
     m_toolbar->omnibox()->setModified(false); // lo escrito era para la pestaña anterior
     m_toolbar->omnibox()->setUrl(tab->url());
-    m_toolbar->setBlockedCount(tab->blockedCount());
     m_linkPreview->hide();
     m_findBar->hide();
     refreshStar();
+    refreshShield();
+    m_toolbar->setBlockedCount(tab->blockedCount());
     m_toolbar->mainMenu()->setZoomPercent(qRound(tab->zoomFactor() * 100));
     setWindowTitle(titleFor(tab->title()));
     refreshNavigation();

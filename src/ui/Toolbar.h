@@ -21,6 +21,9 @@ public:
     // Menú del botón de extensiones (puzle); quien lo usa lo rellena en aboutToShow.
     QMenu* extensionsMenu() const { return m_extensionsMenu; }
     void setExtensionsVisible(bool visible);
+    // Menú del escudo; quien lo usa lo rellena en aboutToShow.
+    QMenu* shieldMenu() const { return m_shieldMenu; }
+    void setShieldActive(bool active); // apagado en este sitio: escudo gris y sin número
     void setNavigation(bool canBack, bool canForward, bool loading);
     void setBlockedCount(int count);
     void setBookmarked(bool bookmarked);
@@ -39,6 +42,8 @@ private:
     QToolButton* m_reload;
     Omnibox* m_omnibox;
     QToolButton* m_shield;
+    QMenu* m_shieldMenu;
+    bool m_shieldActive = true;
     QToolButton* m_star;
     QToolButton* m_extensions;
     QMenu* m_extensionsMenu;
