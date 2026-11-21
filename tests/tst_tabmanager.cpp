@@ -132,6 +132,23 @@ private slots:
         QTRY_COMPARE(tabs.tab(0)->blockedCount(), 1);
     }
 
+    void blockedCountsAreBatched()
+    {
+        // Muchos bloqueos seguidos (una web con cientos de anuncios) avisan a la interfaz una sola vez,
+        // no uno por uno: el filtrado corre en el mismo hilo que la interfaz y que Chromium.
+        sora::AdblockService adblock;
+        QSignalSpy spy(&adblock, &sora::AdblockService::blockedOnSite);
+        for (int i = 0; i < 300; ++i)
+            adblock.recordBlocked(QUrl("https://site.test/p"));
+        adblock.recordBlocked(QUrl("https://otro.test/"));
+        QCOMPARE(spy.count(), 0);
+        QTRY_COMPARE(spy.count(), 2);
+        QHash<QString, int> got;
+        for (const auto& args : spy)
+            got[args.at(0).toString()] = args.at(1).toInt();
+        QCOMPARE(got.value("site.test"), 300);
+        QCOMPARE(got.value("otro.test"), 1);
+    }
     void contextMenuIsInSpanish()
     {
         // Qt 6.12 no traduce las acciones del menú de la web aunque haya traductor.

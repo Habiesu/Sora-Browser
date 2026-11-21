@@ -74,9 +74,10 @@ Tab::Tab(QWebEngineProfile* profile, QWidget* parent)
     });
 }
 
-void Tab::countBlocked()
+void Tab::countBlocked(int count)
 {
-    emit blockedCountChanged(++m_blocked);
+    m_blocked += count;
+    emit blockedCountChanged(m_blocked);
 }
 
 QWebEngineView* Tab::createWindow(QWebEnginePage::WebWindowType type)

@@ -24,7 +24,7 @@ public:
 
     int blockedCount() const { return m_blocked; }
     bool isLoading() const { return m_loading; }
-    void countBlocked();
+    void countBlocked(int count = 1);
 
     // Lo pone TabManager: dónde abrir lo que la web pide en otra ventana.
     std::function<Tab*(QWebEnginePage::WebWindowType)> onCreateWindow;

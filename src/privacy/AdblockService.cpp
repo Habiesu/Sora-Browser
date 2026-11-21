@@ -12,7 +12,24 @@ namespace sora {
 
 AdblockService::AdblockService(QObject* parent)
     : QObject(parent)
+    , m_flush(new QTimer(this))
 {
+    // El interceptor corre en el hilo de la interfaz (el mismo de Chromium): por cada petición
+    // bloqueada solo se suma; la interfaz se entera de golpe un poco después.
+    m_flush->setSingleShot(true);
+    m_flush->setInterval(100);
+    connect(m_flush, &QTimer::timeout, this, [this] {
+        const QHash<QString, int> pending = std::exchange(m_pending, {});
+        for (auto it = pending.cbegin(); it != pending.cend(); ++it)
+            emit blockedOnSite(it.key(), it.value());
+    });
+}
+
+void AdblockService::recordBlocked(const QUrl& firstParty)
+{
+    ++m_pending[firstParty.host()];
+    if (!m_flush->isActive())
+        m_flush->start();
 }
 
 void AdblockService::setEngine(std::shared_ptr<const AdblockEngine> engine)
@@ -23,7 +40,7 @@ void AdblockService::setEngine(std::shared_ptr<const AdblockEngine> engine)
 void AdblockService::attach(QWebEngineProfile* profile)
 {
     auto* interceptor = new RequestInterceptor(this, this);
-    connect(interceptor, &RequestInterceptor::blocked, this, &AdblockService::blocked);
+    connect(interceptor, &RequestInterceptor::blocked, this, [this](const QUrl&, const QUrl& firstParty) { recordBlocked(firstParty); });
     profile->setUrlRequestInterceptor(interceptor);
     m_profiles.append(profile);
     updateScripts(profile);
