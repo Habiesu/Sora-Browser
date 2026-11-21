@@ -4,6 +4,8 @@
 #include <QFileDialog>
 #include <QUrl>
 #include <QWebEngineCookieStore>
+#include <QWebEngineExtensionInfo>
+#include <QWebEngineExtensionManager>
 #include <QWebEngineProfile>
 #include <QtWebEngineCore/qtwebenginecoreglobal.h>
 
@@ -79,6 +81,80 @@ void InternalApi::clearBrowsingData(bool history, bool cookies, bool cache)
         if (cache)
             p->clearHttpCache();
     }
+}
+
+void InternalApi::setProfiles(QList<QWebEngineProfile*> profiles)
+{
+    const bool first = m_profiles.isEmpty();
+    m_profiles = std::move(profiles);
+    if (auto* manager = extensionManager(); manager && first) {
+        using M = QWebEngineExtensionManager;
+        for (auto signal : {&M::loadFinished, &M::installFinished, &M::unloadFinished, &M::uninstallFinished})
+            connect(manager, signal, this, &InternalApi::extensionsChanged);
+    }
+}
+
+QWebEngineExtensionManager* InternalApi::extensionManager() const
+{
+    return m_profiles.isEmpty() ? nullptr : m_profiles.first()->extensionManager();
+}
+
+QVariantList InternalApi::extensions() const
+{
+    QVariantList out;
+    if (auto* manager = extensionManager())
+        for (const QWebEngineExtensionInfo& e : manager->extensions()) {
+            // Las de Chromium (visor de PDF, Hangouts) vienen dentro del motor: no se tocan.
+            if (e.id() == QLatin1String("mhjfbmdgcfjbbpaeojofohoefgiehjai")
+                || e.id() == QLatin1String("nkeimhogjdpnpccoofpliimaahmaaome"))
+                continue;
+            out.append(QVariantMap{{QStringLiteral("id"), e.id()},
+                                   {QStringLiteral("name"), e.name()},
+                                   {QStringLiteral("description"), e.description()},
+                                   {QStringLiteral("enabled"), e.isEnabled()},
+                                   {QStringLiteral("error"), e.error()},
+                                   {QStringLiteral("popup"), e.actionPopupUrl().toString()}});
+        }
+    return out;
+}
+
+void InternalApi::installExtension()
+{
+    auto* manager = extensionManager();
+    if (!manager)
+        return;
+    const QString file = QFileDialog::getOpenFileName(QApplication::activeWindow(), tr("Instalar extensión"), QString(),
+                                                      tr("Extensión (*.zip *.crx)"));
+    if (!file.isEmpty())
+        manager->installExtension(file);
+}
+
+void InternalApi::loadUnpackedExtension()
+{
+    auto* manager = extensionManager();
+    if (!manager)
+        return;
+    const QString dir = QFileDialog::getExistingDirectory(QApplication::activeWindow(), tr("Carpeta de la extensión"));
+    if (!dir.isEmpty())
+        manager->installExtension(dir); // se copia: sigue ahí aunque se borre la carpeta
+}
+
+void InternalApi::setExtensionEnabled(const QString& id, bool enabled)
+{
+    if (auto* manager = extensionManager())
+        for (const QWebEngineExtensionInfo& e : manager->extensions())
+            if (e.id() == id) {
+                manager->setExtensionEnabled(e, enabled);
+                emit extensionsChanged();
+            }
+}
+
+void InternalApi::removeExtension(const QString& id)
+{
+    if (auto* manager = extensionManager())
+        for (const QWebEngineExtensionInfo& e : manager->extensions())
+            if (e.id() == id)
+                e.isInstalled() ? manager->uninstallExtension(e) : manager->unloadExtension(e);
 }
 
 QVariantMap InternalApi::about() const

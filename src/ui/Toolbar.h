@@ -2,6 +2,7 @@
 #include <QWidget>
 #include "ui/Theme.h"
 
+class QMenu;
 class QToolButton;
 
 namespace sora {
@@ -17,6 +18,9 @@ public:
 
     Omnibox* omnibox() const { return m_omnibox; }
     MainMenu* mainMenu() const { return m_mainMenu; }
+    // Menú del botón de extensiones (puzle); quien lo usa lo rellena en aboutToShow.
+    QMenu* extensionsMenu() const { return m_extensionsMenu; }
+    void setExtensionsVisible(bool visible);
     void setNavigation(bool canBack, bool canForward, bool loading);
     void setBlockedCount(int count);
     void setBookmarked(bool bookmarked);
@@ -36,6 +40,8 @@ private:
     Omnibox* m_omnibox;
     QToolButton* m_shield;
     QToolButton* m_star;
+    QToolButton* m_extensions;
+    QMenu* m_extensionsMenu;
     QToolButton* m_menu;
     MainMenu* m_mainMenu;
     Palette m_palette;

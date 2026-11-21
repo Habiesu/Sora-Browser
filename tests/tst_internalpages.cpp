@@ -1,6 +1,7 @@
 #include <QtTest>
 #include <QWebEnginePage>
 #include <QWebEngineProfile>
+#include <QWebEngineExtensionManager>
 
 #include "app/InternalPages.h"
 #include "browser/Tab.h"
@@ -150,6 +151,31 @@ private slots:
         QVERIFY(api.setSetting("homepage", "https://lobos.test/"));
         QCOMPARE(sora::Settings::instance().value("homepage").toString(), QString("https://lobos.test/"));
         QVERIFY(api.setSetting("homepage", ""));
+    }
+    void extensionsPageListsAndDisables()
+    {
+        QWebEngineProfile profile(QStringLiteral("extensiones"));
+        profile.setPersistentStoragePath(m_storage.filePath("perfil-ext"));
+        sora::installInternalPages(&profile);
+        sora::InternalApi api(nullptr, nullptr);
+        api.setProfiles({&profile});
+        sora::setInternalApi(&api);
+
+        QDir(m_storage.path()).mkpath("lobo-ext");
+        QFile manifest(m_storage.filePath("lobo-ext/manifest.json"));
+        QVERIFY(manifest.open(QIODevice::WriteOnly));
+        manifest.write(R"({"manifest_version":3,"name":"Aullido","version":"1.0","description":"Prueba"})");
+        manifest.close();
+        profile.extensionManager()->loadExtension(m_storage.filePath("lobo-ext"));
+        QTRY_COMPARE_WITH_TIMEOUT(api.extensions().size(), 1, 8000);
+
+        sora::Page page(&profile);
+        page.setUrl(QUrl("sora://extensions"));
+        QTRY_VERIFY_WITH_TIMEOUT(runJs(page, "document.body.innerText").toString().contains("Aullido"), 8000);
+
+        const QString id = api.extensions().first().toMap().value("id").toString();
+        api.setExtensionEnabled(id, false);
+        QTRY_COMPARE(api.extensions().first().toMap().value("enabled").toBool(), false);
     }
     void webPagesDoNotGetTheBridge()
     {

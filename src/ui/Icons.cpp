@@ -75,6 +75,19 @@ Shape shapeFor(Icon which)
         p.closeSubpath();
         s.width = 1.8;
         break;
+    case Icon::Puzzle:
+        // Pieza de puzle: cuerpo cuadrado con un saliente arriba y otro a la derecha.
+        p.moveTo(4, 9);
+        p.lineTo(8, 9);
+        p.arcTo(QRectF(8, 5, 5, 5), 180, -180);
+        p.lineTo(17, 9);
+        p.lineTo(17, 12);
+        p.arcTo(QRectF(17, 12, 5, 5), 90, -180);
+        p.lineTo(17, 20);
+        p.lineTo(4, 20);
+        p.closeSubpath();
+        s.width = 1.8;
+        break;
     case Icon::Menu:
         for (qreal x : {5.0, 12.0, 19.0})
             p.addEllipse(QPointF(x, 12), 1.8, 1.8);

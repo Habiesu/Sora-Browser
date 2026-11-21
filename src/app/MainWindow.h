@@ -45,6 +45,7 @@ public:
     void applyColorScheme(Qt::ColorScheme scheme);
     // Aviso breve abajo a la izquierda (p. ej. si fallan las listas de bloqueo).
     void showNotice(const QString& text);
+    void openExtensionPopup(QWebEngineProfile* profile, const QUrl& url);
 
 signals:
     void newWindowRequested(bool incognito);

@@ -40,6 +40,7 @@ qt_add_resources(sora_core "pages" PREFIX "/pages" BASE "${CMAKE_SOURCE_DIR}/res
   ${CMAKE_SOURCE_DIR}/resources/pages/bookmarks.html
   ${CMAKE_SOURCE_DIR}/resources/pages/downloads.html
   ${CMAKE_SOURCE_DIR}/resources/pages/settings.html
+  ${CMAKE_SOURCE_DIR}/resources/pages/extensions.html
   ${CMAKE_SOURCE_DIR}/resources/pages/res/sora.js
   ${CMAKE_SOURCE_DIR}/resources/pages/res/sora.css
   ${CMAKE_SOURCE_DIR}/resources/pages/res/sora.svg

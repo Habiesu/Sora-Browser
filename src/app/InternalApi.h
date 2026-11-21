@@ -3,6 +3,7 @@
 #include <QPointer>
 #include <QVariantList>
 
+class QWebEngineExtensionManager;
 class QWebEngineProfile;
 
 namespace sora {
@@ -41,17 +42,28 @@ public:
     Q_INVOKABLE QString chooseDownloadFolder();
     Q_INVOKABLE void clearBrowsingData(bool history, bool cookies, bool cache);
     Q_INVOKABLE QVariantMap about() const;
-    void setProfiles(QList<QWebEngineProfile*> profiles) { m_profiles = profiles; }
+    // El primero es el perfil normal: el único con extensiones.
+    void setProfiles(QList<QWebEngineProfile*> profiles);
+
+    // Extensiones: [{id, name, description, enabled, error, popup}].
+    Q_INVOKABLE QVariantList extensions() const;
+    Q_INVOKABLE void installExtension(); // pide un .zip o .crx
+    Q_INVOKABLE void loadUnpackedExtension(); // pide una carpeta
+    Q_INVOKABLE void setExtensionEnabled(const QString& id, bool enabled);
+    Q_INVOKABLE void removeExtension(const QString& id);
 
 signals:
     void bookmarksChanged();
     void downloadsChanged();
+    void extensionsChanged();
 
 private:
     HistoryStore* m_history;
     QPointer<BookmarkStore> m_bookmarks;
     QPointer<DownloadManager> m_downloads;
     QList<QWebEngineProfile*> m_profiles;
+
+    QWebEngineExtensionManager* extensionManager() const;
 };
 
 } // namespace sora

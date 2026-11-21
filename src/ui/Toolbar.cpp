@@ -29,6 +29,8 @@ Toolbar::Toolbar(QWidget* parent)
     , m_omnibox(new Omnibox(this))
     , m_shield(toolButton(this, {}))
     , m_star(toolButton(this, tr("Añadir esta página a marcadores (Ctrl+D)")))
+    , m_extensions(toolButton(this, tr("Extensiones")))
+    , m_extensionsMenu(new QMenu(this))
     , m_menu(toolButton(this, tr("Personaliza y controla Sora")))
     , m_palette(nieblaPalette(Qt::ColorScheme::Light))
 {
@@ -43,6 +45,9 @@ Toolbar::Toolbar(QWidget* parent)
     m_star->setObjectName(QStringLiteral("StarButton"));
     m_star->setCheckable(true);
     connect(m_star, &QToolButton::clicked, this, &Toolbar::starClicked);
+
+    m_extensions->setMenu(m_extensionsMenu);
+    m_extensions->setPopupMode(QToolButton::InstantPopup);
 
     m_mainMenu = new MainMenu(this);
     m_menu->setMenu(m_mainMenu);
@@ -59,6 +64,7 @@ Toolbar::Toolbar(QWidget* parent)
     layout->addSpacing(4);
     layout->addWidget(m_shield);
     layout->addWidget(m_star);
+    layout->addWidget(m_extensions);
     layout->addWidget(m_menu);
 
     connect(m_back, &QToolButton::clicked, this, &Toolbar::backRequested);
@@ -105,7 +111,15 @@ void Toolbar::refreshIcons()
     m_reload->setIcon(icon(m_loading ? Icon::Stop : Icon::Reload, m_palette.text));
     m_shield->setIcon(icon(Icon::Shield, m_palette.shield));
     m_star->setIcon(m_star->isChecked() ? icon(Icon::StarFilled, m_palette.shield) : icon(Icon::Star, m_palette.text));
+    m_extensions->setIcon(icon(Icon::Puzzle, m_palette.text));
     m_menu->setIcon(icon(Icon::Menu, m_palette.text));
 }
 
+} // namespace sora
+
+namespace sora {
+void Toolbar::setExtensionsVisible(bool visible)
+{
+    m_extensions->setVisible(visible);
+}
 } // namespace sora

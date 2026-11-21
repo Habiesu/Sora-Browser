@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Extensiones</title>
+<link rel="stylesheet" href="sora://res/sora.css">
+<link rel="icon" href="sora://res/sora.svg">
+<script src="sora://res/qwebchannel.js"></script>
+<script src="sora://res/sora.js"></script>
+<style>
+  main { max-width: 820px; margin: 0 auto; padding: 32px 24px 64px; }
+  header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0; flex: 1; }
+  p.hint { color: var(--muted); margin: 0 0 20px; font-size: 14px; }
+  ul { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  li { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--line); }
+  li:first-child { border-top: none; }
+  .info { flex: 1; min-width: 0; }
+  .name { font-weight: 600; }
+  .desc { color: var(--muted); font-size: 13px; }
+  .error { color: #c0392b; font-size: 13px; }
+  li.off .name, li.off .desc { opacity: .55; }
+  #empty { color: var(--muted); text-align: center; margin-top: 64px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Extensiones</h1>
+    <button id="unpacked">Cargar carpeta</button>
+    <button class="primary" id="install">Instalar archivo...</button>
+  </header>
+  <p class="hint">Sora admite extensiones de Chrome de forma experimental. Instálalas desde un archivo .zip o .crx,
+    o desde la carpeta descomprimida. Algunas funciones de las extensiones pueden no funcionar.</p>
+  <ul id="list"></ul>
+  <p id="empty" hidden>No hay extensiones instaladas.</p>
+</main>
+<script>
+  const list = document.getElementById('list');
+  function render(items) {
+    list.textContent = '';
+    list.hidden = items.length === 0;
+    document.getElementById('empty').hidden = items.length > 0;
+    items.forEach(function (x) {
+      const toggle = el('input', { type: 'checkbox', 'aria-label': 'Activar ' + x.name });
+      toggle.checked = x.enabled;
+      toggle.addEventListener('change', function () { sora.setExtensionEnabled(x.id, toggle.checked); });
+      const info = el('div', { class: 'info' }, [el('div', { class: 'name', text: x.name }),
+                                                 el('div', { class: 'desc', text: x.description })]);
+      if (x.error) info.append(el('div', { class: 'error', text: x.error }));
+      list.append(el('li', { class: x.enabled ? '' : 'off' }, [
+        info, toggle,
+        el('button', { text: 'Quitar', onclick: function () { if (confirm('¿Quitar ' + x.name + '?')) sora.removeExtension(x.id); } })
+      ]));
+    });
+  }
+  function load() { onSora(function (s) { s.extensions(render); }); }
+  document.getElementById('install').addEventListener('click', function () { sora.installExtension(); });
+  document.getElementById('unpacked').addEventListener('click', function () { sora.loadUnpackedExtension(); });
+  onSora(function (s) { s.extensionsChanged.connect(load); });
+  load();
+</script>
+</body>
+</html>

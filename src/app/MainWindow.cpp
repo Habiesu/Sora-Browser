@@ -21,6 +21,12 @@
 #include <QVBoxLayout>
 #include <QWebEngineHistory>
 #include <QWebEngineProfile>
+#include <QWebEngineExtensionInfo>
+#include <QWebEngineExtensionManager>
+#include <QWebEngineView>
+#include <QLibraryInfo>
+#include <QMenu>
+#include <QScreen>
 #include <QWindow>
 
 #include "app/InternalPages.h"
@@ -197,6 +203,28 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
             t->setFocus();
     });
 
+    // Botón de extensiones (puzle), como en Chrome. Incógnito no tiene extensiones.
+    m_toolbar->setExtensionsVisible(!m_incognito && profile->extensionManager());
+    QMenu* extensions = m_toolbar->extensionsMenu();
+    connect(extensions, &QMenu::aboutToShow, this, [this, profile, extensions] {
+        extensions->clear();
+        bool any = false;
+        for (const QWebEngineExtensionInfo& e : profile->extensionManager()->extensions()) {
+            if (!e.isEnabled() || e.path().startsWith(QLibraryInfo::path(QLibraryInfo::DataPath)))
+                continue; // apagadas y las que trae Chromium (visor de PDF...)
+            any = true;
+            QAction* a = extensions->addAction(e.name());
+            const QUrl popup = e.actionPopupUrl();
+            a->setEnabled(popup.isValid());
+            connect(a, &QAction::triggered, this, [this, profile, popup] { openExtensionPopup(profile, popup); });
+        }
+        if (!any)
+            extensions->addAction(tr("No hay extensiones activas"))->setEnabled(false);
+        extensions->addSeparator();
+        connect(extensions->addAction(tr("Gestionar extensiones")), &QAction::triggered, this,
+                [this] { runCommand(MainMenu::Command::Extensions); });
+    });
+
     addShortcuts();
     applyColorScheme(QGuiApplication::styleHints()->colorScheme());
     connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, this, &MainWindow::applyColorScheme);
@@ -298,6 +326,21 @@ void MainWindow::runCommand(MainMenu::Command command)
             t->page()->triggerAction(QWebEnginePage::SavePage); // DownloadManager pregunta dónde
         break;
     }
+}
+
+void MainWindow::openExtensionPopup(QWebEngineProfile* profile, const QUrl& url)
+{
+    // shortcut: tamaño fijo; Chrome ajusta la ventana al contenido. Medirlo si alguna extensión queda cortada.
+    auto* popup = new QWebEngineView(profile, this);
+    popup->setWindowFlags(Qt::Popup);
+    popup->setAttribute(Qt::WA_DeleteOnClose);
+    popup->resize(380, 480);
+    connect(popup->page(), &QWebEnginePage::windowCloseRequested, popup, &QWidget::close);
+    popup->setUrl(url);
+    const QRect screen = this->screen()->availableGeometry();
+    QPoint at = mapToGlobal(QPoint(width() - popup->width() - 8, m_titleBar->height() + m_toolbar->height()));
+    popup->move(qBound(screen.left(), at.x(), screen.right() - popup->width()), at.y());
+    popup->show();
 }
 
 void MainWindow::openInternal(const QUrl& url)
