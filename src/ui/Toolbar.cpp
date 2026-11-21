@@ -3,6 +3,7 @@
 #include <QHBoxLayout>
 #include <QEvent>
 #include <QMenu>
+#include <QProxyStyle>
 #include <QScreen>
 #include <QToolButton>
 
@@ -11,6 +12,16 @@
 #include "ui/Omnibox.h"
 
 namespace sora {
+
+namespace {
+class ScrollableMenuStyle : public QProxyStyle {
+public:
+    int styleHint(StyleHint hint, const QStyleOption* option, const QWidget* widget, QStyleHintReturn* ret) const override
+    {
+        return hint == SH_Menu_Scrollable ? 1 : QProxyStyle::styleHint(hint, option, widget, ret);
+    }
+};
+} // namespace
 namespace {
 QToolButton* toolButton(QWidget* parent, const QString& tip)
 {
@@ -57,8 +68,19 @@ Toolbar::Toolbar(QWidget* parent)
     m_mainMenu = new MainMenu(this);
     m_menu->setMenu(m_mainMenu);
     // Como en Chrome: los menús de la derecha se abren hacia dentro de la ventana.
-    for (QMenu* menu : {static_cast<QMenu*>(m_mainMenu), m_extensionsMenu, m_shieldMenu})
+    // Una sola columna que se desplaza (flecha abajo) si no cabe, en vez de partirse en columnas.
+    auto* scrollable = new ScrollableMenuStyle;
+    scrollable->setParent(this);
+    for (QMenu* menu : {static_cast<QMenu*>(m_mainMenu), m_extensionsMenu, m_shieldMenu}) {
         menu->installEventFilter(this);
+        menu->setStyle(scrollable);
+        // Como mucho hasta el borde inferior de la ventana.
+        connect(menu, &QMenu::aboutToShow, this, [this, menu] {
+            const int bottom = window()->mapToGlobal(QPoint(0, window()->height())).y();
+            const int top = mapToGlobal(QPoint(0, height())).y();
+            menu->setMaximumHeight(std::max(120, bottom - top - 8));
+        });
+    }
     m_menu->setPopupMode(QToolButton::InstantPopup);
 
     auto* layout = new QHBoxLayout(this);

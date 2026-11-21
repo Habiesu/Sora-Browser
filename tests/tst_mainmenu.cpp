@@ -19,6 +19,27 @@ static QStringList visibleTexts(const QMenu* menu)
 class TestMainMenu : public QObject {
     Q_OBJECT
 private slots:
+    void oneColumnThatScrollsInsideTheWindow()
+    {
+        // Como Chrome: una sola columna que no pasa del borde inferior de la ventana; si no caben
+        // todas las opciones, se desplaza (flecha abajo) en vez de partirse en columnas.
+        QWidget window;
+        sora::Toolbar bar(&window);
+        window.resize(1000, 260);
+        bar.resize(1000, 40);
+        window.move(100, 100);
+        window.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&window));
+        QMenu* menu = bar.mainMenu();
+        menu->popup(bar.mapToGlobal(QPoint(960, 40)));
+        QTRY_VERIFY(menu->isVisible());
+        const QList<QAction*> actions = menu->actions();
+        QCOMPARE(menu->actionGeometry(actions.first()).left(), menu->actionGeometry(actions.last()).left());
+        const int windowBottom = window.mapToGlobal(QPoint(0, window.height())).y();
+        QVERIFY2(menu->geometry().bottom() <= windowBottom,
+                 qPrintable(QString("menú hasta y=%1, ventana hasta y=%2").arg(menu->geometry().bottom()).arg(windowBottom)));
+        menu->close();
+    }
     void opensInwardLikeChrome()
     {
         // El menú (botón a la derecha del todo) se abre hacia dentro: no pasa del borde derecho de la barra.
