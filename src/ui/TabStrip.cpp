@@ -13,6 +13,7 @@ constexpr int kMaxTab = 220;
 constexpr int kPlusSize = 28;
 constexpr int kPlusGap = 6;
 constexpr int kPlusReserve = kPlusSize + 2 * kPlusGap;
+constexpr int kTabTopMargin = 6; // margin-top de QTabBar::tab en nieblaStyleSheet
 
 // Con más pestañas de las que caben, QTabBar pone las flechas al final y las pestañas hasta ellas.
 // Se corren a la izquierda para dejarle al "+" su hueco sin tapar ninguna pestaña.
@@ -57,9 +58,12 @@ void TabStrip::applyPalette(const Palette& p)
 {
     m_closeColor = p.faintText;
     m_plus->setIcon(icon(Icon::Plus, p.mutedText));
-    for (int i = 0; i < count(); ++i)
+    for (int i = 0; i < count(); ++i) {
         if (auto* b = qobject_cast<QToolButton*>(tabButton(i, RightSide)))
             b->setIcon(icon(Icon::Close, m_closeColor));
+        if (tabData(i).toBool())
+            setPageIcon(i, {});
+    }
 }
 
 QSize TabStrip::tabSizeHint(int index) const
@@ -74,9 +78,17 @@ QSize TabStrip::minimumTabSizeHint(int index) const
     return {kMinTab, QTabBar::tabSizeHint(index).height()};
 }
 
+void TabStrip::setPageIcon(int index, const QIcon& pageIcon)
+{
+    setTabIcon(index, pageIcon.isNull() ? icon(Icon::Globe, m_closeColor) : pageIcon);
+    setTabData(index, pageIcon.isNull()); // true = genérico, se repinta con el tema
+}
+
 void TabStrip::tabInserted(int index)
 {
     QTabBar::tabInserted(index);
+    if (tabIcon(index).isNull())
+        setPageIcon(index, {});
     auto* close = new QToolButton(this);
     close->setObjectName(QStringLiteral("TabCloseButton"));
     close->setToolTip(tr("Cerrar pestaña (Ctrl+W)"));
@@ -99,6 +111,12 @@ void TabStrip::tabInserted(int index)
 void TabStrip::tabLayoutChange()
 {
     QTabBar::tabLayoutChange();
+    // QTabBar centra la × en todo el alto, incluido el margen superior de la hoja de estilos.
+    for (int i = 0; i < count(); ++i)
+        if (QWidget* close = tabButton(i, RightSide)) {
+            const QRect visible = tabRect(i).adjusted(0, kTabTopMargin, 0, 0);
+            close->move(close->x(), visible.center().y() - close->height() / 2 + 1);
+        }
     placePlus();
 }
 

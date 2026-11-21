@@ -83,6 +83,31 @@ private slots:
             QCOMPARE(QColor(img.pixel(corner * img.devicePixelRatio())).name(), tab.name());
         }
     }
+    void tabWithoutIconStillHasOne()
+    {
+        // Sin favicon, Qt centra el título; como en Chrome, va a la izquierda tras un icono genérico.
+        TabStrip bar;
+        bar.addTab("Nueva pestaña");
+        QVERIFY(!bar.tabIcon(0).isNull());
+        bar.setPageIcon(0, QIcon()); // la web se queda sin favicon
+        QVERIFY(!bar.tabIcon(0).isNull());
+    }
+    void closeButtonIsVerticallyCentered()
+    {
+        const sora::Palette p = sora::nieblaPalette(Qt::ColorScheme::Dark);
+        QWidget host;
+        host.setStyleSheet(sora::nieblaStyleSheet(p));
+        TabStrip bar(&host);
+        bar.addTab("A");
+        host.resize(1200, 40);
+        bar.resize(1200, 40);
+        host.show();
+        // La pestaña visible empieza 6 px más abajo (margin-top de la hoja de estilos).
+        const QRect tab = bar.tabRect(0).adjusted(0, 6, 0, 0);
+        const QWidget* close = bar.tabButton(0, QTabBar::RightSide);
+        QVERIFY2(qAbs(close->geometry().center().y() - tab.center().y()) <= 1,
+                 qPrintable(QString("× en y=%1, centro de la pestaña y=%2").arg(close->geometry().center().y()).arg(tab.center().y())));
+    }
     void plusDoesNotCoverTabsOrArrows_data()
     {
         QTest::addColumn<bool>("styled");

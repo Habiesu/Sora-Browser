@@ -135,7 +135,7 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
         if (index == m_tabs->currentIndex())
             setWindowTitle(windowTitleFor(title));
     });
-    connect(m_tabs, &TabManager::tabIconChanged, strip, &QTabBar::setTabIcon);
+    connect(m_tabs, &TabManager::tabIconChanged, strip, &TabStrip::setPageIcon);
     connect(m_tabs, &TabManager::lastTabClosed, this, &QWidget::close);
 
     connect(strip, &QTabBar::currentChanged, this, [this](int index) {

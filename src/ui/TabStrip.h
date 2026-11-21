@@ -13,6 +13,8 @@ class TabStrip : public QTabBar {
 public:
     explicit TabStrip(QWidget* parent = nullptr);
     void applyPalette(const Palette& p);
+    // Icono de la web; sin favicon se pone uno genérico (sin icono, Qt centraría el título).
+    void setPageIcon(int index, const QIcon& icon);
 
 signals:
     void newTabRequested();
