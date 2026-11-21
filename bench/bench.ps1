@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
   Compara el arranque y la memoria de Sora con los de Chrome en este PC.
 
@@ -175,8 +175,7 @@ $portBusy = $true
 try { (New-Object Net.Sockets.TcpClient).Connect("127.0.0.1", $DebugPort) } catch { $portBusy = $false }
 if ($portBusy) { throw "El puerto $DebugPort está ocupado; usa -DebugPort." }
 
-# DevTools en el puerto local para medir la carga de página igual en los dos navegadores.
-$env:QTWEBENGINE_REMOTE_DEBUGGING = "127.0.0.1:$DebugPort"
+# DevTools en el puerto local (--remote-debugging-port) para medir la carga igual en los dos navegadores.
 
 $chromeVersion = (Get-Item $Chrome).VersionInfo.ProductVersion
 $cpu = (Get-CimInstance Win32_Processor | Select-Object -First 1).Name
@@ -184,9 +183,8 @@ $ramGB = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemor
 $os = (Get-CimInstance Win32_OperatingSystem).Caption
 
 $summary = @()
-$summary += Measure-Browser "Sora" $Sora @($Url)
+$summary += Measure-Browser "Sora" $Sora @("--remote-debugging-port=$DebugPort", $Url)
 $summary += Measure-Browser "Chrome $chromeVersion" $Chrome @("--user-data-dir=`"$chromeProfile`"", "--no-first-run", "--no-default-browser-check", "--remote-debugging-port=$DebugPort", $Url)
-Remove-Item Env:QTWEBENGINE_REMOTE_DEBUGGING
 
 Write-Host ""
 Write-Host "Equipo: $cpu, $ramGB GB RAM, $os"

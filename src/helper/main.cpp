@@ -5,10 +5,12 @@
 
 // La GPU de Chromium va en este proceso: aquí deciden los controladores qué gráfica usar.
 // Con la integrada, los directos de Discord desde la dedicada hacían parpadear las páginas.
+#ifndef SORA_INTEGRATED_GPU
 extern "C" {
 __declspec(dllexport) unsigned long NvOptimusEnablement = 1;
 __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
+#endif
 
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int)
 {
