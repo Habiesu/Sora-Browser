@@ -75,6 +75,20 @@ Shape shapeFor(Icon which)
         p.closeSubpath();
         s.width = 1.8;
         break;
+    case Icon::Search:
+        p.addEllipse(QPointF(10.5, 10.5), 6.5, 6.5);
+        p.addPath(polyline({{15.5, 15.5}, {20, 20}}));
+        break;
+    case Icon::Tab:
+        p.addRoundedRect(QRectF(3, 5, 18, 14), 2, 2);
+        p.addPath(polyline({{3, 9}, {21, 9}}));
+        s.width = 1.8;
+        break;
+    case Icon::History:
+        p.addEllipse(QPointF(12, 12), 9, 9);
+        p.addPath(polyline({{12, 7}, {12, 12}, {15.5, 14}}));
+        s.width = 1.8;
+        break;
     case Icon::Puzzle:
         // Pieza de puzle: cuerpo cuadrado con un saliente arriba y otro a la derecha.
         p.moveTo(4, 9);

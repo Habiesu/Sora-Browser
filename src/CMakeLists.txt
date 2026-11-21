@@ -8,6 +8,7 @@ add_library(sora_core STATIC
   browser/Tab.h browser/Tab.cpp
   browser/TabManager.h browser/TabManager.cpp
   browser/DownloadManager.h browser/DownloadManager.cpp
+  browser/Suggestions.h browser/Suggestions.cpp
   ui/Theme.h ui/Theme.cpp
   ui/Icons.h ui/Icons.cpp
   ui/TabStrip.h ui/TabStrip.cpp

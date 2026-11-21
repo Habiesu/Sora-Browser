@@ -1,9 +1,12 @@
 #pragma once
+#include <QPointer>
 #include <QMainWindow>
 #include <QUrl>
 #include "ui/MainMenu.h"
 
 class QLabel;
+class QNetworkReply;
+class QTimer;
 class QShortcut;
 class QStackedWidget;
 class QWebEngineProfile;
@@ -69,6 +72,10 @@ private:
     FindBar* m_findBar;
     HistoryStore* m_history = nullptr;
     BookmarkStore* m_bookmarkStore = nullptr;
+    QTimer* m_suggestTimer;
+    QPointer<QNetworkReply> m_suggestReply;
+    void suggest(const QString& text, const QStringList& searches);
+    void requestSearchSuggestions();
     bool m_bookmarksWanted = true; // lo que el usuario eligió (Ctrl+Mayús+B), fuera de pantalla completa
     bool m_wasMaximized = false;
     bool m_pageFullScreen = false; // un vídeo pidió pantalla completa: F11 se la quita a él

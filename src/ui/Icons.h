@@ -4,7 +4,7 @@
 
 namespace sora {
 
-enum class Icon { Back, Forward, Reload, Stop, Lock, Globe, Shield, Star, StarFilled, Menu, Puzzle, Plus, Close, Minimize, Maximize, Restore };
+enum class Icon { Back, Forward, Reload, Stop, Lock, Globe, Shield, Star, StarFilled, Menu, Puzzle, Search, Tab, History, Plus, Close, Minimize, Maximize, Restore };
 
 // Icono Niebla dibujado con QPainterPath (nítido a cualquier tamaño y escala, sin Qt Svg).
 // En modo desactivado se pinta con el color atenuado al 40 %.

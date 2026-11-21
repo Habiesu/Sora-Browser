@@ -12,7 +12,7 @@ private slots:
     {
         QTest::addColumn<Icon>("which");
         const Icon all[] = {Icon::Back, Icon::Forward, Icon::Reload, Icon::Stop, Icon::Lock, Icon::Globe,
-                            Icon::Shield, Icon::Star, Icon::StarFilled, Icon::Menu, Icon::Puzzle, Icon::Plus, Icon::Close,
+                            Icon::Shield, Icon::Star, Icon::StarFilled, Icon::Menu, Icon::Puzzle, Icon::Search, Icon::Tab, Icon::History, Icon::Plus, Icon::Close,
                             Icon::Minimize, Icon::Maximize, Icon::Restore};
         for (Icon i : all)
             QTest::newRow(QByteArray::number(int(i)).constData()) << i;

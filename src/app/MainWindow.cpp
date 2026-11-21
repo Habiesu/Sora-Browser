@@ -21,6 +21,8 @@
 #include <QVBoxLayout>
 #include <QWebEngineHistory>
 #include <QWebEngineProfile>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
 #include <QWebEngineExtensionInfo>
 #include <QWebEngineExtensionManager>
 #include <QWebEngineView>
@@ -31,6 +33,7 @@
 
 #include "app/InternalPages.h"
 #include "app/Settings.h"
+#include "browser/Suggestions.h"
 #include "browser/Tab.h"
 #include "data/BookmarkStore.h"
 #include "data/HistoryStore.h"
@@ -203,6 +206,21 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
             t->setFocus();
     });
 
+    // Predicción de la barra de direcciones: al momento lo local; las búsquedas de DuckDuckGo, al parar de escribir.
+    m_suggestTimer = new QTimer(this);
+    m_suggestTimer->setSingleShot(true);
+    m_suggestTimer->setInterval(120);
+    connect(m_suggestTimer, &QTimer::timeout, this, &MainWindow::requestSearchSuggestions);
+    connect(m_toolbar->omnibox(), &QLineEdit::textEdited, this, [this](const QString& text) {
+        suggest(text, {});
+        m_suggestTimer->start();
+    });
+    connect(m_toolbar->omnibox(), &Omnibox::tabRequested, this, [this](int index) {
+        m_tabs->setCurrentIndex(index);
+        if (auto* t = currentTab())
+            t->setFocus();
+    });
+
     // Botón de extensiones (puzle), como en Chrome. Incógnito no tiene extensiones.
     m_toolbar->setExtensionsVisible(!m_incognito && profile->extensionManager());
     QMenu* extensions = m_toolbar->extensionsMenu();
@@ -326,6 +344,48 @@ void MainWindow::runCommand(MainMenu::Command command)
             t->page()->triggerAction(QWebEnginePage::SavePage); // DownloadManager pregunta dónde
         break;
     }
+}
+
+void MainWindow::suggest(const QString& text, const QStringList& searches)
+{
+    QList<OpenTab> tabs;
+    for (int i = 0; i < m_tabs->count(); ++i)
+        if (i != m_tabs->currentIndex())
+            tabs.append({i, m_tabs->tab(i)->title(), m_tabs->tab(i)->url()});
+    const auto bookmarks = m_bookmarkStore ? m_bookmarkStore->all() : QList<BookmarkStore::Bookmark>();
+    // Incógnito no usa el historial (tampoco lo guarda).
+    const auto history = m_history && !m_incognito && !text.trimmed().isEmpty() ? m_history->search(text.trimmed(), 30)
+                                                                                : QList<HistoryStore::Entry>();
+    Omnibox* box = m_toolbar->omnibox();
+    if (searches.isEmpty())
+        box->setInlineCompletion(inlineCompletion(text, bookmarks, history));
+    box->setSuggestions(buildSuggestions(text, tabs, bookmarks, history, searches));
+}
+
+void MainWindow::requestSearchSuggestions()
+{
+    if (m_suggestReply)
+        m_suggestReply->abort();
+    Omnibox* box = m_toolbar->omnibox();
+    // Lo escrito, sin la parte completada en línea (seleccionada).
+    const QString typed = box->hasSelectedText() ? box->text().left(box->selectionStart()) : box->text();
+    if (typed.trimmed().isEmpty() || typed.startsWith(QLatin1String("sora:")) || typed.contains(QLatin1String("://")))
+        return;
+    static QNetworkAccessManager* network = new QNetworkAccessManager(qApp); // sin cookies ni caché del perfil
+    QUrl url(QStringLiteral("https://duckduckgo.com/ac/"));
+    QUrlQuery query;
+    query.addQueryItem(QStringLiteral("q"), typed);
+    query.addQueryItem(QStringLiteral("type"), QStringLiteral("list"));
+    url.setQuery(query);
+    QNetworkReply* reply = network->get(QNetworkRequest(url));
+    m_suggestReply = reply;
+    connect(reply, &QNetworkReply::finished, this, [this, reply, typed] {
+        reply->deleteLater();
+        Omnibox* box = m_toolbar->omnibox();
+        const QString now = box->hasSelectedText() ? box->text().left(box->selectionStart()) : box->text();
+        if (reply->error() == QNetworkReply::NoError && now == typed && box->hasFocus())
+            suggest(typed, parseSearchSuggestions(reply->readAll()));
+    });
 }
 
 void MainWindow::openExtensionPopup(QWebEngineProfile* profile, const QUrl& url)
