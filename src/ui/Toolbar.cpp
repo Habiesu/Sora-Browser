@@ -75,6 +75,7 @@ Toolbar::Toolbar(QWidget* parent)
     connect(m_reload, &QToolButton::clicked, this, [this] { emit m_loading ? stopRequested() : reloadRequested(); });
 
     setNavigation(false, false, false);
+    refreshIcons();
     setBlockedCount(0);
 }
 
@@ -82,9 +83,11 @@ void Toolbar::setNavigation(bool canBack, bool canForward, bool loading)
 {
     m_back->setEnabled(canBack);
     m_forward->setEnabled(canForward);
+    if (m_loading == loading)
+        return; // llega en cada cambio de dirección: sin cambios, no se rehacen los iconos
     m_loading = loading;
     m_reload->setToolTip(loading ? tr("Parar (Esc)") : tr("Recargar (F5)"));
-    refreshIcons();
+    m_reload->setIcon(icon(m_loading ? Icon::Stop : Icon::Reload, m_palette.text));
 }
 
 void Toolbar::setBlockedCount(int count)
@@ -129,7 +132,9 @@ void Toolbar::setExtensionsVisible(bool visible)
 
 void Toolbar::setShieldActive(bool active)
 {
+    if (m_shieldActive == active)
+        return;
     m_shieldActive = active;
-    refreshIcons();
+    m_shield->setIcon(icon(Icon::Shield, m_shieldActive ? m_palette.shield : m_palette.faintText));
 }
 } // namespace sora
