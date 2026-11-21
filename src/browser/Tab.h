@@ -7,6 +7,14 @@ class QWebEngineProfile;
 
 namespace sora {
 
+// Página de Sora: ajustes por sitio antes de cada navegación.
+class Page : public QWebEnginePage {
+    Q_OBJECT
+public:
+    using QWebEnginePage::QWebEnginePage;
+    bool acceptNavigationRequest(const QUrl& url, NavigationType type, bool isMainFrame) override;
+};
+
 // Una pestaña: la vista web con su propia página y el contador de bloqueos de la página actual
 // (vuelve a 0 al empezar a cargar otra).
 class Tab : public QWebEngineView {

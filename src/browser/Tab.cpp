@@ -1,6 +1,7 @@
 #include "browser/Tab.h"
 
 #include <QAction>
+#include <QWebEngineSettings>
 
 namespace sora {
 
@@ -32,10 +33,22 @@ void translateActions(QWebEnginePage* page)
 }
 } // namespace
 
+bool Page::acceptNavigationRequest(const QUrl& url, NavigationType type, bool isMainFrame)
+{
+    if (isMainFrame) {
+        // shortcut: ANGLE de Qt 6.12 se cae (y con él Sora, la GPU va en el mismo proceso) con el
+        // WebGL de la portada de github.com; ahí la web usa una imagen fija. Quitar al actualizar
+        // Qt WebEngine si https://github.com deja de cerrar Sora con WebGL activado.
+        const bool crashesAngle = url.host() == QLatin1String("github.com");
+        settings()->setAttribute(QWebEngineSettings::WebGLEnabled, !crashesAngle);
+    }
+    return QWebEnginePage::acceptNavigationRequest(url, type, isMainFrame);
+}
+
 Tab::Tab(QWebEngineProfile* profile, QWidget* parent)
     : QWebEngineView(parent)
 {
-    setPage(new QWebEnginePage(profile, this));
+    setPage(new Page(profile, this));
     translateActions(page());
     connect(this, &QWebEngineView::loadFinished, this, [this] { m_loading = false; });
     connect(this, &QWebEngineView::loadStarted, this, [this] {

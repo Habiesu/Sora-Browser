@@ -1,5 +1,6 @@
 #include <QtTest>
 #include <QAction>
+#include <QWebEngineSettings>
 #include <QStackedWidget>
 #include <QWebEngineProfile>
 
@@ -149,6 +150,19 @@ private slots:
         for (auto a : {QWebEnginePage::SavePage, QWebEnginePage::DownloadLinkToDisk,
                        QWebEnginePage::DownloadImageToDisk, QWebEnginePage::DownloadMediaToDisk})
             QVERIFY(!page->action(a)->isVisible());
+    }
+    void webglOffOnlyWhereItCrashes()
+    {
+        // ANGLE de Qt 6.12 se cae con el globo de github.com (GPU en el mismo proceso que Sora).
+        QStackedWidget stack;
+        TabManager tabs(m_profile, &m_adblock, &stack);
+        Tab* tab = tabs.newTab();
+        QWebEngineSettings* s = tab->page()->settings();
+        auto* page = static_cast<sora::Page*>(tab->page());
+        QVERIFY(page->acceptNavigationRequest(QUrl("https://github.com/"), QWebEnginePage::NavigationTypeTyped, true));
+        QVERIFY(!s->testAttribute(QWebEngineSettings::WebGLEnabled));
+        page->acceptNavigationRequest(QUrl("https://threejs.org/"), QWebEnginePage::NavigationTypeLinkClicked, true);
+        QVERIFY(s->testAttribute(QWebEngineSettings::WebGLEnabled));
     }
     void popupOpensNextToCurrent()
     {
