@@ -1,11 +1,42 @@
 #include "browser/Tab.h"
 
+#include <QAction>
+
 namespace sora {
+
+namespace {
+// Qt 6.12 no traduce las acciones del menú contextual de la web aunque haya traductor instalado.
+void translateActions(QWebEnginePage* page)
+{
+    using A = QWebEnginePage;
+    const std::pair<A::WebAction, const char*> texts[] = {
+        {A::Back, "Atrás"}, {A::Forward, "Adelante"}, {A::Reload, "Volver a cargar"}, {A::Stop, "Detener"},
+        {A::Cut, "Cortar"}, {A::Copy, "Copiar"}, {A::Paste, "Pegar"},
+        {A::PasteAndMatchStyle, "Pegar con el mismo estilo"}, {A::Undo, "Deshacer"}, {A::Redo, "Rehacer"},
+        {A::SelectAll, "Seleccionar todo"}, {A::OpenLinkInThisWindow, "Abrir enlace aquí"},
+        {A::OpenLinkInNewWindow, "Abrir enlace en una ventana nueva"},
+        {A::OpenLinkInNewTab, "Abrir enlace en una pestaña nueva"},
+        {A::OpenLinkInNewBackgroundTab, "Abrir enlace en segundo plano"},
+        {A::CopyLinkToClipboard, "Copiar dirección del enlace"}, {A::CopyImageToClipboard, "Copiar imagen"},
+        {A::CopyImageUrlToClipboard, "Copiar dirección de la imagen"},
+        {A::CopyMediaUrlToClipboard, "Copiar dirección del vídeo o audio"},
+        {A::ToggleMediaControls, "Mostrar controles"}, {A::ToggleMediaLoop, "Repetir"},
+        {A::ToggleMediaPlayPause, "Reproducir o pausar"}, {A::ToggleMediaMute, "Silenciar"},
+        {A::ViewSource, "Ver código fuente"}, {A::ExitFullScreen, "Salir de pantalla completa"}};
+    for (const auto& [action, text] : texts)
+        page->action(action)->setText(QString::fromUtf8(text));
+    // Descargas y herramientas de desarrollo aún no existen (Hito 6): estas opciones no harían nada.
+    for (auto action : {A::SavePage, A::DownloadLinkToDisk, A::DownloadImageToDisk, A::DownloadMediaToDisk,
+                        A::InspectElement})
+        page->action(action)->setVisible(false);
+}
+} // namespace
 
 Tab::Tab(QWebEngineProfile* profile, QWidget* parent)
     : QWebEngineView(parent)
 {
     setPage(new QWebEnginePage(profile, this));
+    translateActions(page());
     connect(this, &QWebEngineView::loadFinished, this, [this] { m_loading = false; });
     connect(this, &QWebEngineView::loadStarted, this, [this] {
         m_loading = true;

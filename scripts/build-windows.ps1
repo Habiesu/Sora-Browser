@@ -74,6 +74,10 @@ New-Item -ItemType Directory -Force -Path $stage | Out-Null
 Copy-Item "build-win\sora.exe" $stage
 & "$QtDir\bin\windeployqt.exe" --release --no-translations --no-system-d3d-compiler --no-opengl-sw --no-compiler-runtime "$stage\sora.exe"
 if ($LASTEXITCODE) { throw "Falló windeployqt." }
+# windeployqt (con --no-translations) solo deja el inglés: sin esto, las páginas de error de Chromium
+# y los menús de Qt (clic derecho en la web) salen en inglés.
+Copy-Item "$QtDir\translations\qtwebengine_locales\es*.pak" "$stage\translations\qtwebengine_locales"
+Copy-Item "$QtDir\translations\qtbase_es.qm", "$QtDir\translations\qtwebengine_es.qm" "$stage\translations"
 # Runtime de C++ junto a sora.exe: así funciona en PCs sin "Visual C++ Redistributable"
 # y sin pedir permisos de administrador.
 $crt = Get-ChildItem -Directory "$env:VCToolsRedistDir\x64" -Filter "Microsoft.VC*.CRT" | Select-Object -First 1

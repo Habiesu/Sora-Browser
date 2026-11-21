@@ -16,6 +16,9 @@
 #include "browser/TabManager.h"
 
 #include <QDir>
+#include <QLibraryInfo>
+#include <QLocale>
+#include <QTranslator>
 #ifdef Q_OS_WIN
 #include <qt_windows.h>
 #endif
@@ -28,6 +31,20 @@ int main(int argc, char* argv[])
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("Sora"));
     QApplication::setOrganizationName(QStringLiteral("Sora"));
+
+    // Menús de Qt y de la web (clic derecho) en el idioma del sistema.
+    // Instalado: junto a sora.exe (QLibraryInfo apunta a la carpeta de arriba). Compilado: la de Qt.
+    const QStringList translationDirs = {QCoreApplication::applicationDirPath() + QStringLiteral("/translations"),
+                                         QLibraryInfo::path(QLibraryInfo::TranslationsPath)};
+    for (const char* catalog : {"qtbase", "qtwebengine"}) {
+        auto* translator = new QTranslator(&app);
+        for (const QString& dir : translationDirs) {
+            if (translator->load(QLocale(), QLatin1String(catalog), QStringLiteral("_"), dir)) {
+                QCoreApplication::installTranslator(translator);
+                break;
+            }
+        }
+    }
 
     QCommandLineParser cli;
     cli.addHelpOption();

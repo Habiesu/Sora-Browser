@@ -1,4 +1,5 @@
 #include <QtTest>
+#include <QAction>
 #include <QStackedWidget>
 #include <QWebEngineProfile>
 
@@ -129,6 +130,26 @@ private slots:
         QTRY_COMPARE(tabs.tab(0)->blockedCount(), 1);
     }
 
+    void contextMenuIsInSpanish()
+    {
+        // Qt 6.12 no traduce las acciones del menú de la web aunque haya traductor.
+        QStackedWidget stack;
+        TabManager tabs(m_profile, &m_adblock, &stack);
+        QWebEnginePage* page = tabs.newTab()->page();
+        QCOMPARE(page->action(QWebEnginePage::Back)->text(), QString::fromUtf8("Atrás"));
+        QCOMPARE(page->action(QWebEnginePage::Reload)->text(), QString("Volver a cargar"));
+        QCOMPARE(page->action(QWebEnginePage::OpenLinkInNewTab)->text(), QString::fromUtf8("Abrir enlace en una pestaña nueva"));
+        QCOMPARE(page->action(QWebEnginePage::Copy)->text(), QString("Copiar"));
+    }
+    void downloadActionsAreHiddenUntilDownloadsExist()
+    {
+        QStackedWidget stack;
+        TabManager tabs(m_profile, &m_adblock, &stack);
+        QWebEnginePage* page = tabs.newTab()->page();
+        for (auto a : {QWebEnginePage::SavePage, QWebEnginePage::DownloadLinkToDisk,
+                       QWebEnginePage::DownloadImageToDisk, QWebEnginePage::DownloadMediaToDisk})
+            QVERIFY(!page->action(a)->isVisible());
+    }
     void popupOpensNextToCurrent()
     {
         QStackedWidget stack;
