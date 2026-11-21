@@ -17,13 +17,6 @@ QString nieblaStyleSheet(const Palette& p)
     QString css = QStringLiteral(R"(
 #TitleBar { background: @window; }
 QTabBar { background: transparent; }
-QTabBar::tab {
-    background: @window; color: @muted; border: none;
-    border-top-left-radius: 8px; border-top-right-radius: 8px;
-    padding: 0 6px 0 10px; margin: 6px 1px 0 1px; height: 34px;
-}
-QTabBar::tab:hover:!selected { background: @hover; }
-QTabBar::tab:selected { background: @surface; color: @text; }
 QTabBar QToolButton { background: @window; border: none; }
 #TabCloseButton { background: transparent; border: none; border-radius: 4px; }
 #TabCloseButton:hover { background: @hover; }

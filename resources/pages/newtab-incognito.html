@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Nueva pestaña</title>
+<link rel="stylesheet" href="sora://res/sora.css">
+<link rel="icon" href="sora://res/sora.svg">
+<style>
+  body { background: #15181e; color: #e6e9ef; }
+  main { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+  section { max-width: 600px; }
+  h1 { font-size: 24px; font-weight: 600; margin: 0 0 12px; }
+  p, li { color: #a3abb9; }
+  input[type=search] { width: 100%; font-size: 16px; padding: 12px 16px; border-radius: 24px; margin: 20px 0; background: #252a33; border-color: #323946; color: #e6e9ef; }
+</style>
+</head>
+<body>
+<main><section>
+  <h1>Estás en una ventana de incógnito</h1>
+  <p>Sora no guarda nada de esta ventana al cerrarla:</p>
+  <ul>
+    <li>ni el historial de navegación,</li>
+    <li>ni cookies ni datos de sitios,</li>
+    <li>ni lo que escribas en formularios.</li>
+  </ul>
+  <p>Tu proveedor de internet, tu empresa o tu centro de estudios y las webs que visitas pueden seguir viendo tu actividad. Las descargas y marcadores que crees sí se guardan.</p>
+  <form action="https://duckduckgo.com/" method="get">
+    <input type="search" name="q" placeholder="Buscar en DuckDuckGo" autocomplete="off" aria-label="Buscar en DuckDuckGo">
+  </form>
+</section></main>
+</body>
+</html>

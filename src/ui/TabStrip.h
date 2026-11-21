@@ -2,6 +2,7 @@
 #include <QTabBar>
 #include "ui/Theme.h"
 
+class QProxyStyle;
 class QToolButton;
 
 namespace sora {
@@ -34,6 +35,7 @@ protected:
 private:
     bool m_dragging = false;
     QToolButton* m_plus;
+    QProxyStyle* m_style;
     QColor m_closeColor;
     QColor m_lineColor;
     void placePlus();

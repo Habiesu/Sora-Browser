@@ -2,6 +2,7 @@ add_library(sora_core STATIC
   app/MainWindow.h app/MainWindow.cpp
   app/SingleInstance.h app/SingleInstance.cpp
   app/Browser.h app/Browser.cpp
+  app/InternalPages.h app/InternalPages.cpp
   browser/Tab.h browser/Tab.cpp
   browser/TabManager.h browser/TabManager.cpp
   ui/Theme.h ui/Theme.cpp
@@ -22,6 +23,14 @@ target_link_libraries(sora_core PUBLIC Qt6::Widgets Qt6::Network Qt6::WebEngineW
 if(WIN32)
   target_link_libraries(sora_core PUBLIC dwmapi user32)
 endif()
+
+# Páginas internas (sora://), dentro del ejecutable.
+qt_add_resources(sora_core "pages" PREFIX "/pages" BASE "${CMAKE_SOURCE_DIR}/resources/pages" FILES
+  ${CMAKE_SOURCE_DIR}/resources/pages/newtab.html
+  ${CMAKE_SOURCE_DIR}/resources/pages/newtab-incognito.html
+  ${CMAKE_SOURCE_DIR}/resources/pages/res/sora.css
+  ${CMAKE_SOURCE_DIR}/resources/pages/res/sora.svg
+)
 
 qt_add_executable(sora WIN32 app/main.cpp)
 if(WIN32)

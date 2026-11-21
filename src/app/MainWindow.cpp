@@ -16,6 +16,7 @@
 #include <QWebEngineProfile>
 #include <QWindow>
 
+#include "app/InternalPages.h"
 #include "browser/Tab.h"
 #include "browser/TabManager.h"
 #include "ui/BookmarksBar.h"
@@ -176,7 +177,7 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
     setWindowTitle(titleFor({}));
     resize(1280, 800);
     if (startWithTab)
-        m_tabs->newTab();
+        m_tabs->newTab(m_incognito ? kIncognitoNewTabUrl : kNewTabUrl);
 }
 
 QString MainWindow::titleFor(const QString& pageTitle) const
@@ -223,7 +224,7 @@ void MainWindow::navigate(const QString& input)
 
 void MainWindow::newTab()
 {
-    m_tabs->newTab();
+    m_tabs->newTab(m_incognito ? kIncognitoNewTabUrl : kNewTabUrl);
     m_toolbar->omnibox()->setFocus(Qt::ShortcutFocusReason);
 }
 

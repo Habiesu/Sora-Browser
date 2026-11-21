@@ -35,6 +35,11 @@ void translateActions(QWebEnginePage* page)
 
 bool Page::acceptNavigationRequest(const QUrl& url, NavigationType type, bool isMainFrame)
 {
+    // Las páginas sora:// (ajustes, historial...) solo se abren a mano (barra, menú) o desde otra
+    // página interna: una web no puede llevar al usuario a ellas.
+    if (url.scheme() == QLatin1String("sora") && type != NavigationTypeTyped
+        && this->url().scheme() != QLatin1String("sora"))
+        return false;
     if (isMainFrame) {
         // shortcut: ANGLE de Qt 6.12 se cae (y con él Sora, la GPU va en el mismo proceso) con el
         // WebGL de la portada de github.com; ahí la web usa una imagen fija. Quitar al actualizar

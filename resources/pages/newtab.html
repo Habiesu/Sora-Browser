@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Nueva pestaña</title>
+<link rel="stylesheet" href="sora://res/sora.css">
+<link rel="icon" href="sora://res/sora.svg">
+<style>
+  main { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; }
+  img { width: 72px; height: 72px; margin-bottom: 20px; }
+  h1 { font-size: 26px; font-weight: 600; margin: 0 0 6px; }
+  p { color: var(--muted); margin: 0 0 24px; }
+  form { width: min(560px, 100%); }
+  input[type=search] { width: 100%; font-size: 16px; padding: 12px 16px; border-radius: 24px; }
+  footer { position: fixed; bottom: 16px; left: 0; right: 0; color: var(--faint); font-size: 13px; text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <img src="sora://res/sora.svg" alt="">
+  <h1>¿Adónde vamos?</h1>
+  <p>Busca en la web o escribe una dirección en la barra de arriba.</p>
+  <form action="https://duckduckgo.com/" method="get">
+    <input type="search" name="q" placeholder="Buscar en DuckDuckGo" autocomplete="off" aria-label="Buscar en DuckDuckGo">
+  </form>
+</main>
+<footer>Sora bloquea anuncios y rastreadores en todas las páginas.</footer>
+</body>
+</html>

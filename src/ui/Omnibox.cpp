@@ -10,7 +10,8 @@ namespace sora {
 
 QString displayUrl(const QUrl& url)
 {
-    if (url.isEmpty() || url == QUrl(QStringLiteral("about:blank")))
+    // Como Chrome: la nueva pestaña no muestra dirección.
+    if (url.isEmpty() || url == QUrl(QStringLiteral("about:blank")) || url.toString().startsWith(QLatin1String("sora://newtab")))
         return {};
     if (url.scheme() != QLatin1String("https"))
         return url.toDisplayString();
@@ -62,7 +63,7 @@ void Omnibox::refreshSecurityIcon()
     const bool secure = m_url.scheme() == QLatin1String("https");
     m_security->setIcon(secure ? icon(Icon::Lock, m_palette.shield) : icon(Icon::Globe, m_palette.faintText));
     m_security->setToolTip(secure ? tr("Conexión segura") : tr("La conexión no está cifrada"));
-    m_security->setVisible(!m_url.isEmpty() && m_url != QUrl(QStringLiteral("about:blank")));
+    m_security->setVisible(!displayUrl(m_url).isEmpty()); // nueva pestaña: sin icono, como Chrome
 }
 
 void Omnibox::keyPressEvent(QKeyEvent* event)

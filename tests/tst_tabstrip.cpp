@@ -97,6 +97,7 @@ private slots:
         QWidget host;
         host.setStyleSheet(sora::nieblaStyleSheet(p));
         TabStrip bar(&host);
+        bar.applyPalette(p); // como hace la ventana (TitleBar::applyPalette)
         bar.addTab("A");
         bar.addTab("B");
         host.resize(1200, 40);
@@ -118,6 +119,31 @@ private slots:
         QVERIFY(!bar.tabIcon(0).isNull());
         bar.setPageIcon(0, QIcon()); // la web se queda sin favicon
         QVERIFY(!bar.tabIcon(0).isNull());
+    }
+    void shortTitleIsLeftAligned()
+    {
+        // Como Chrome: el título empieza justo tras el icono aunque sea corto (Qt lo centraba).
+        const sora::Palette p = sora::nieblaPalette(Qt::ColorScheme::Dark);
+        QWidget host;
+        host.setStyleSheet(sora::nieblaStyleSheet(p));
+        TabStrip bar(&host);
+        bar.applyPalette(p);
+        bar.addTab("WWWW");
+        host.resize(1200, 40);
+        bar.resize(1200, 40);
+        host.show();
+        const QImage img = bar.grab().toImage();
+        const qreal dpr = img.devicePixelRatio();
+        const QRect tab = bar.tabRect(0);
+        const QColor bg = p.surface;
+        int firstText = -1;
+        for (int x = tab.left() + 36; x < tab.right() - 30 && firstText < 0; ++x)
+            for (int y = tab.top() + 12; y < tab.bottom() - 6; ++y) {
+                const QColor c(img.pixel(QPoint(x, y) * dpr));
+                if (qAbs(c.lightness() - bg.lightness()) > 60) { firstText = x; break; }
+            }
+        QVERIFY2(firstText >= 0 && firstText < tab.left() + 60,
+                 qPrintable(QString("el texto empieza en x=%1 (pestaña desde %2)").arg(firstText).arg(tab.left())));
     }
     void separatorsBetweenInactiveTabs()
     {

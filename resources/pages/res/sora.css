@@ -1,0 +1,26 @@
+/* Estilo común de las páginas internas: colores Niebla, claro y oscuro según el sistema. */
+:root {
+  --bg: #f8fafc; --surface: #ffffff; --text: #1c2330; --muted: #5a6476; --faint: #9aa3b2;
+  --line: #dfe4ec; --field: #eaeef4; --accent: #1f5c45; --accent-text: #ffffff; --hover: #dde3eb;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1f27; --surface: #252a33; --text: #e6e9ef; --muted: #a3abb9; --faint: #6b7383;
+    --line: #323946; --field: #252a33; --accent: #7fb89a; --accent-text: #10251c; --hover: #2f3540;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
+a { color: var(--accent); }
+button, input, select { font: inherit; color: inherit; }
+input[type=search], input[type=text] {
+  background: var(--field); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; outline: none;
+}
+input[type=search]:focus, input[type=text]:focus { border-color: var(--accent); }
+button {
+  background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer;
+}
+button:hover { background: var(--hover); }
+button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }

@@ -2,7 +2,9 @@
 
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPainterPath>
 #include <QProxyStyle>
+#include <QStyleOptionTab>
 #include <QToolButton>
 
 #include "ui/Icons.h"
@@ -14,19 +16,64 @@ constexpr int kMaxTab = 220;
 constexpr int kPlusSize = 28;
 constexpr int kPlusGap = 6;
 constexpr int kPlusReserve = kPlusSize + 2 * kPlusGap;
-constexpr int kTabTopMargin = 6; // margin-top de QTabBar::tab en nieblaStyleSheet
+constexpr int kTabTopMargin = 6; // hueco sobre la pestaña: se ve la barra de título
+constexpr int kTabHeight = 40;
 constexpr int kDetachDistance = 30; // px fuera de la tira para sacar la pestaña
 
-// Con más pestañas de las que caben, QTabBar pone las flechas al final y las pestañas hasta ellas.
-// Se corren a la izquierda para dejarle al "+" su hueco sin tapar ninguna pestaña.
+// Estilo propio de las pestañas: Sora las dibuja enteras (fondo, icono y título a la izquierda,
+// como Chrome). La hoja de estilos de Qt centraba el título; así además la pestaña que se arrastra
+// (Qt la dibuja aparte) se ve igual que las demás.
 class TabStripStyle : public QProxyStyle {
 public:
+    Palette palette = nieblaPalette(Qt::ColorScheme::Light);
+
+    // Con más pestañas de las que caben, las flechas se corren a la izquierda: hueco para el "+".
     QRect subElementRect(SubElement element, const QStyleOption* option, const QWidget* widget) const override
     {
         QRect r = QProxyStyle::subElementRect(element, option, widget);
         if (element == SE_TabBarScrollLeftButton || element == SE_TabBarScrollRightButton)
             r.translate(-kPlusReserve, 0);
         return r;
+    }
+
+    void drawControl(ControlElement element, const QStyleOption* option, QPainter* painter,
+                     const QWidget* widget) const override
+    {
+        const auto* tab = qstyleoption_cast<const QStyleOptionTab*>(option);
+        if (!tab || (element != CE_TabBarTabShape && element != CE_TabBarTabLabel && element != CE_TabBarTab)) {
+            QProxyStyle::drawControl(element, option, painter, widget);
+            return;
+        }
+        if (element == CE_TabBarTab) {
+            drawControl(CE_TabBarTabShape, option, painter, widget);
+            drawControl(CE_TabBarTabLabel, option, painter, widget);
+            return;
+        }
+        const bool selected = tab->state & State_Selected;
+        const QRect visible = tab->rect.adjusted(1, kTabTopMargin, -1, 0);
+        if (element == CE_TabBarTabShape) {
+            const QColor fill = selected ? palette.surface
+                              : (tab->state & State_MouseOver) ? palette.hover : palette.window;
+            QPainterPath path;
+            path.addRoundedRect(visible.adjusted(0, 0, 0, 8), 8, 8); // solo redondeada arriba
+            painter->save();
+            painter->setRenderHint(QPainter::Antialiasing);
+            painter->setClipRect(visible);
+            painter->fillPath(path, fill);
+            painter->restore();
+            return;
+        }
+        const QSize iconSize = tab->iconSize.isValid() ? tab->iconSize : QSize(16, 16);
+        const QRect iconRect(QPoint(visible.left() + 10, visible.center().y() - iconSize.height() / 2 + 1), iconSize);
+        if (!tab->icon.isNull())
+            tab->icon.paint(painter, iconRect);
+        QRect textRect(iconRect.right() + 9, visible.top(), 0, visible.height());
+        textRect.setRight(visible.right() - (tab->rightButtonSize.isValid() ? tab->rightButtonSize.width() + 10 : 8));
+        painter->save();
+        painter->setPen(selected ? palette.text : palette.mutedText);
+        painter->drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter,
+                          painter->fontMetrics().elidedText(tab->text, Qt::ElideRight, textRect.width()));
+        painter->restore();
     }
 };
 } // namespace
@@ -45,9 +92,9 @@ TabStrip::TabStrip(QWidget* parent)
     setUsesScrollButtons(true);
     setFocusPolicy(Qt::NoFocus);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    auto* tabStyle = new TabStripStyle;
-    tabStyle->setParent(this);
-    setStyle(tabStyle);
+    m_style = new TabStripStyle;
+    m_style->setParent(this);
+    setStyle(m_style);
 
     m_plus->setObjectName(QStringLiteral("NewTabButton"));
     m_plus->setToolTip(tr("Nueva pestaña (Ctrl+T)"));
@@ -75,6 +122,7 @@ void TabStrip::applyPalette(const Palette& p)
 {
     m_closeColor = p.faintText;
     m_lineColor = p.line;
+    static_cast<TabStripStyle*>(m_style)->palette = p;
     update();
     m_plus->setIcon(icon(Icon::Plus, p.mutedText));
     for (int i = 0; i < count(); ++i) {
@@ -89,12 +137,14 @@ QSize TabStrip::tabSizeHint(int index) const
 {
     const int available = width() - kPlusSize - 2 * kPlusGap;
     const int each = count() ? available / count() : kMaxTab;
-    return {std::clamp(each, kMinTab, kMaxTab), QTabBar::tabSizeHint(index).height()};
+    Q_UNUSED(index);
+    return {std::clamp(each, kMinTab, kMaxTab), kTabHeight};
 }
 
 QSize TabStrip::minimumTabSizeHint(int index) const
 {
-    return {kMinTab, QTabBar::tabSizeHint(index).height()};
+    Q_UNUSED(index);
+    return {kMinTab, kTabHeight};
 }
 
 void TabStrip::setPageIcon(int index, const QIcon& pageIcon)

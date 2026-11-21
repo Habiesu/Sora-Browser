@@ -4,6 +4,7 @@
 #include <QEvent>
 #include <QWebEngineProfile>
 
+#include "app/InternalPages.h"
 #include "app/MainWindow.h"
 #include "browser/Tab.h"
 #include "browser/TabManager.h"
@@ -39,6 +40,7 @@ MainWindow* Browser::createWindow(bool incognito, bool startWithTab)
             m_incognito = new QWebEngineProfile(this); // sin nombre: no escribe nada en disco
             if (m_adblock)
                 m_adblock->attach(m_incognito);
+            installInternalPages(m_incognito);
         }
         profile = m_incognito;
     }

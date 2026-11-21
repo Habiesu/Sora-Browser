@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 96 96">
+  <!-- Icono de Sora: lobo en verde pino (opción "S · Lobo amable" de docs/icono/lobos3.svg) -->
+  <rect width="96" height="96" rx="22" fill="#1F5C45"/>
+  <path d="M22 44 C18 30 20 18 26 14 C32 16 38 24 40 30 H56 C58 24 64 16 70 14 C76 18 78 30 74 44 C78 62 66 82 48 84 C30 82 18 62 22 44 Z" fill="#F4F1E8"/>
+  <path d="M27 22 C30 24 33 28 34 31 L28 36 Z M69 22 C66 24 63 28 62 31 L68 36 Z" fill="#7FB89A"/>
+  <path d="M36 62 C40 58 56 58 60 62 C60 72 54 78 48 78 C42 78 36 72 36 62 Z" fill="#E3DDCC"/>
+  <ellipse cx="38" cy="50" rx="3.5" ry="4.5" fill="#1F5C45"/>
+  <ellipse cx="58" cy="50" rx="3.5" ry="4.5" fill="#1F5C45"/>
+  <ellipse cx="48" cy="64" rx="5" ry="3.5" fill="#1F5C45"/>
+</svg>

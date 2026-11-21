@@ -9,6 +9,7 @@
 #include <QWebEngineProfile>
 
 #include "app/Browser.h"
+#include "app/InternalPages.h"
 #include "app/MainWindow.h"
 #include "browser/Tab.h"
 #include "privacy/AdblockService.h"
@@ -29,6 +30,7 @@ int main(int argc, char* argv[])
     QElapsedTimer sinceStart; // --bench mide desde aquí
     sinceStart.start();
 
+    sora::registerSoraScheme(); // antes de la aplicación
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("Sora"));
     QApplication::setOrganizationName(QStringLiteral("Sora"));
@@ -73,6 +75,7 @@ int main(int argc, char* argv[])
 
     auto* adblock = new sora::AdblockService(&app);
     adblock->attach(profile);
+    sora::installInternalPages(profile);
 
     sora::Browser browser(profile, adblock);
     sora::MainWindow* window = browser.newWindow();
@@ -102,7 +105,8 @@ int main(int argc, char* argv[])
         }, Qt::SingleShotConnection);
     }
 
-    window->navigate(positional.isEmpty() ? QStringLiteral("about:blank") : positional.first());
+    if (!positional.isEmpty())
+        window->navigate(positional.first());
 
     // El motor se prepara después de mostrar la ventana; hasta entonces no se bloquea nada.
     auto* nam = new QNetworkAccessManager(&app);
