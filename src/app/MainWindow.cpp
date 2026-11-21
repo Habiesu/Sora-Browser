@@ -31,6 +31,7 @@
 #include <QScreen>
 #include <QWindow>
 
+#include "app/InternalApi.h"
 #include "app/InternalPages.h"
 #include "app/Settings.h"
 #include "browser/Suggestions.h"
@@ -228,8 +229,8 @@ MainWindow::MainWindow(QWebEngineProfile* profile, const AdblockService* adblock
         extensions->clear();
         bool any = false;
         for (const QWebEngineExtensionInfo& e : profile->extensionManager()->extensions()) {
-            if (!e.isEnabled() || e.path().startsWith(QLibraryInfo::path(QLibraryInfo::DataPath)))
-                continue; // apagadas y las que trae Chromium (visor de PDF...)
+            if (!e.isEnabled() || isBuiltInExtension(e.id()))
+                continue;
             any = true;
             QAction* a = extensions->addAction(e.name());
             const QUrl popup = e.actionPopupUrl();
@@ -357,9 +358,13 @@ void MainWindow::suggest(const QString& text, const QStringList& searches)
     const auto history = m_history && !m_incognito && !text.trimmed().isEmpty() ? m_history->search(text.trimmed(), 30)
                                                                                 : QList<HistoryStore::Entry>();
     Omnibox* box = m_toolbar->omnibox();
+    const QString inlined = inlineCompletion(text, bookmarks, history);
     if (searches.isEmpty())
-        box->setInlineCompletion(inlineCompletion(text, bookmarks, history));
-    box->setSuggestions(buildSuggestions(text, tabs, bookmarks, history, searches));
+        box->setInlineCompletion(inlined);
+    QList<Suggestion> list = buildSuggestions(text, tabs, bookmarks, history, searches);
+    if (!inlined.isEmpty() && !list.isEmpty())
+        list.first() = {Suggestion::Url, inlined, {}}; // como Chrome: la primera fila es lo completado
+    box->setSuggestions(list);
 }
 
 void MainWindow::requestSearchSuggestions()
@@ -827,6 +832,25 @@ bool MainWindow::nativeEvent(const QByteArray& eventType, void* message, qintptr
             m_titleBar->maximizeButton()->setDown(false);
             if (click)
                 toggleMaximized();
+            *result = 0;
+            return true;
+        }
+        return false;
+    case WM_NCRBUTTONUP:
+        // Clic derecho en la barra de título: el menú de la ventana de Windows, como en Chrome.
+        // (Qt se queda el WM_CONTEXTMENU que lo abriría, así que se abre aquí.)
+        if (msg->wParam == HTCAPTION) {
+            HMENU menu = GetSystemMenu(msg->hwnd, FALSE);
+            const bool maximized = IsZoomed(msg->hwnd);
+            const UINT normal = maximized ? MF_GRAYED : MF_ENABLED;
+            EnableMenuItem(menu, SC_RESTORE, maximized ? MF_ENABLED : MF_GRAYED);
+            EnableMenuItem(menu, SC_MAXIMIZE, normal);
+            EnableMenuItem(menu, SC_MOVE, normal);
+            EnableMenuItem(menu, SC_SIZE, normal);
+            const int command = TrackPopupMenu(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON, GET_X_LPARAM(msg->lParam),
+                                               GET_Y_LPARAM(msg->lParam), 0, msg->hwnd, nullptr);
+            if (command)
+                PostMessageW(msg->hwnd, WM_SYSCOMMAND, WPARAM(command), 0);
             *result = 0;
             return true;
         }

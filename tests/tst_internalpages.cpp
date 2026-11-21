@@ -193,6 +193,7 @@ private slots:
     {
         QCOMPARE(sora::displayUrl(QUrl("sora://newtab")), QString());
         QCOMPARE(sora::displayUrl(QUrl("sora://history")), QString("sora://history"));
+        QCOMPARE(sora::displayUrl(QUrl("sora://history/")), QString("sora://history"));
     }
 };
 

@@ -9,6 +9,10 @@ class QWebEngineProfile;
 namespace sora {
 
 class BookmarkStore;
+
+// Las extensiones que trae Chromium (visor de PDF, Hangouts): no se muestran ni se tocan.
+bool isBuiltInExtension(const QString& id);
+
 class DownloadManager;
 class HistoryStore;
 

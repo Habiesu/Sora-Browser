@@ -17,6 +17,12 @@
 
 namespace sora {
 
+bool isBuiltInExtension(const QString& id)
+{
+    return id == QLatin1String("mhjfbmdgcfjbbpaeojofohoefgiehjai") // visor de PDF
+           || id == QLatin1String("nkeimhogjdpnpccoofpliimaahmaaome"); // Hangouts
+}
+
 InternalApi::InternalApi(HistoryStore* history, BookmarkStore* bookmarks, DownloadManager* downloads,
                          QObject* parent)
     : QObject(parent)
@@ -104,9 +110,7 @@ QVariantList InternalApi::extensions() const
     QVariantList out;
     if (auto* manager = extensionManager())
         for (const QWebEngineExtensionInfo& e : manager->extensions()) {
-            // Las de Chromium (visor de PDF, Hangouts) vienen dentro del motor: no se tocan.
-            if (e.id() == QLatin1String("mhjfbmdgcfjbbpaeojofohoefgiehjai")
-                || e.id() == QLatin1String("nkeimhogjdpnpccoofpliimaahmaaome"))
+            if (isBuiltInExtension(e.id()))
                 continue;
             out.append(QVariantMap{{QStringLiteral("id"), e.id()},
                                    {QStringLiteral("name"), e.name()},

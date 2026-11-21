@@ -21,6 +21,8 @@ QString displayUrl(const QUrl& url)
     // Como Chrome: la nueva pestaña no muestra dirección.
     if (url.isEmpty() || url == QUrl(QStringLiteral("about:blank")) || url.toString().startsWith(QLatin1String("sora://newtab")))
         return {};
+    if (url.scheme() == QLatin1String("sora") && url.path() == QLatin1String("/"))
+        return url.toDisplayString(QUrl::RemovePath); // sora://history, no sora://history/ (StripTrailingSlash no quita la raíz)
     if (url.scheme() != QLatin1String("https"))
         return url.toDisplayString();
     QString s = url.toDisplayString(QUrl::RemoveScheme);
