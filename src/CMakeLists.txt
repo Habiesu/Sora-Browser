@@ -3,6 +3,7 @@ add_library(sora_core STATIC
   app/SingleInstance.h app/SingleInstance.cpp
   app/Browser.h app/Browser.cpp
   app/InternalPages.h app/InternalPages.cpp
+  app/InternalApi.h app/InternalApi.cpp
   browser/Tab.h browser/Tab.cpp
   browser/TabManager.h browser/TabManager.cpp
   ui/Theme.h ui/Theme.cpp
@@ -24,7 +25,7 @@ add_library(sora_core STATIC
   privacy/FilterListStore.h privacy/FilterListStore.cpp
 )
 target_include_directories(sora_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(sora_core PUBLIC Qt6::Widgets Qt6::Network Qt6::WebEngineWidgets Qt6::Concurrent Qt6::PrintSupport Qt6::Sql sora_adblock)
+target_link_libraries(sora_core PUBLIC Qt6::Widgets Qt6::Network Qt6::WebEngineWidgets Qt6::Concurrent Qt6::PrintSupport Qt6::Sql Qt6::WebChannel sora_adblock)
 if(WIN32)
   target_link_libraries(sora_core PUBLIC dwmapi user32)
 endif()
@@ -33,6 +34,9 @@ endif()
 qt_add_resources(sora_core "pages" PREFIX "/pages" BASE "${CMAKE_SOURCE_DIR}/resources/pages" FILES
   ${CMAKE_SOURCE_DIR}/resources/pages/newtab.html
   ${CMAKE_SOURCE_DIR}/resources/pages/newtab-incognito.html
+  ${CMAKE_SOURCE_DIR}/resources/pages/history.html
+  ${CMAKE_SOURCE_DIR}/resources/pages/bookmarks.html
+  ${CMAKE_SOURCE_DIR}/resources/pages/res/sora.js
   ${CMAKE_SOURCE_DIR}/resources/pages/res/sora.css
   ${CMAKE_SOURCE_DIR}/resources/pages/res/sora.svg
 )

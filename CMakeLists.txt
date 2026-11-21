@@ -8,7 +8,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-find_package(Qt6 6.12 REQUIRED COMPONENTS Core Gui Widgets Network WebEngineCore WebEngineWidgets Concurrent PrintSupport Sql Test)
+find_package(Qt6 6.12 REQUIRED COMPONENTS Core Gui Widgets Network WebEngineCore WebEngineWidgets Concurrent PrintSupport Sql WebChannel Test)
 qt_standard_project_setup()
 add_compile_definitions(SORA_VERSION="${PROJECT_VERSION}")
 

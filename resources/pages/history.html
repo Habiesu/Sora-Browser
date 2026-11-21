@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Historial</title>
+<link rel="stylesheet" href="sora://res/sora.css">
+<link rel="icon" href="sora://res/sora.svg">
+<script src="sora://res/qwebchannel.js"></script>
+<script src="sora://res/sora.js"></script>
+<style>
+  main { max-width: 820px; margin: 0 auto; padding: 32px 24px 64px; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0; flex: 1; }
+  #search { width: 320px; }
+  h2 { font-size: 14px; font-weight: 600; color: var(--muted); margin: 28px 0 8px; }
+  ul { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  li { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-top: 1px solid var(--line); }
+  li:first-child { border-top: none; }
+  li:hover { background: var(--hover); }
+  .time { color: var(--faint); font-size: 13px; width: 48px; flex: none; font-variant-numeric: tabular-nums; }
+  .title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); text-decoration: none; }
+  .host { color: var(--muted); font-size: 13px; flex: none; max-width: 30%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  li button { visibility: hidden; padding: 2px 8px; }
+  li:hover button { visibility: visible; }
+  #empty { color: var(--muted); text-align: center; margin-top: 64px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Historial</h1>
+    <input id="search" type="search" placeholder="Buscar en el historial" aria-label="Buscar en el historial">
+    <button id="clear">Borrar todo</button>
+  </header>
+  <div id="list"></div>
+  <p id="empty" hidden>No hay nada en el historial.</p>
+</main>
+<script>
+  const list = document.getElementById('list');
+  const dayName = function (d) {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const day = new Date(d); day.setHours(0, 0, 0, 0);
+    const diff = Math.round((today - day) / 86400000);
+    if (diff === 0) return 'Hoy';
+    if (diff === 1) return 'Ayer';
+    return day.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  };
+  function render(entries) {
+    list.textContent = '';
+    document.getElementById('empty').hidden = entries.length > 0;
+    let group = null, current = '';
+    entries.forEach(function (e) {
+      const name = dayName(e.time);
+      if (name !== current) {
+        current = name;
+        list.append(el('h2', { text: name }));
+        group = el('ul');
+        list.append(group);
+      }
+      const time = new Date(e.time).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+      group.append(el('li', {}, [
+        el('span', { class: 'time', text: time }),
+        el('a', { class: 'title', href: e.url, text: e.title || e.url, title: e.url }),
+        el('span', { class: 'host', text: hostOf(e.url) }),
+        el('button', { 'data-remove': e.url, text: 'Quitar', 'aria-label': 'Quitar del historial',
+                       onclick: function () { sora.removeHistory(e.url); load(); } })
+      ]));
+    });
+  }
+  function load() { onSora(function (s) { s.history(document.getElementById('search').value, render); }); }
+  document.getElementById('search').addEventListener('input', load);
+  document.getElementById('clear').addEventListener('click', function () {
+    if (confirm('¿Borrar todo el historial de navegación?')) { sora.clearHistory(); load(); }
+  });
+  load();
+</script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Marcadores</title>
+<link rel="stylesheet" href="sora://res/sora.css">
+<link rel="icon" href="sora://res/sora.svg">
+<script src="sora://res/qwebchannel.js"></script>
+<script src="sora://res/sora.js"></script>
+<style>
+  main { max-width: 820px; margin: 0 auto; padding: 32px 24px 64px; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 6px; }
+  p.hint { color: var(--muted); margin: 0 0 20px; }
+  ul { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-top: 1px solid var(--line); }
+  li:first-child { border-top: none; }
+  li:hover { background: var(--hover); }
+  input.name { flex: 1; min-width: 0; background: transparent; border: 1px solid transparent; padding: 4px 8px; border-radius: 6px; }
+  input.name:hover, input.name:focus { border-color: var(--line); background: var(--field); }
+  a.url { color: var(--muted); font-size: 13px; max-width: 35%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  li button { padding: 2px 8px; }
+  #empty { color: var(--muted); text-align: center; margin-top: 64px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Marcadores</h1>
+  <p class="hint">Aparecen en la barra de favoritos en este orden. Cambia el nombre escribiendo encima.</p>
+  <ul id="list"></ul>
+  <p id="empty" hidden>Aún no hay marcadores. Usa la estrella de la barra de direcciones (Ctrl+D).</p>
+</main>
+<script>
+  const list = document.getElementById('list');
+  function render(items) {
+    list.textContent = '';
+    list.hidden = items.length === 0;
+    document.getElementById('empty').hidden = items.length > 0;
+    items.forEach(function (b, i) {
+      const name = el('input', { class: 'name', type: 'text', value: b.title, 'aria-label': 'Nombre del marcador' });
+      name.addEventListener('change', function () { sora.renameBookmark(b.id, name.value); });
+      list.append(el('li', {}, [
+        name,
+        el('a', { class: 'url', href: b.url, text: hostOf(b.url), title: b.url }),
+        el('button', { text: '↑', 'aria-label': 'Subir', onclick: function () { sora.moveBookmark(b.id, i - 1); } }),
+        el('button', { text: '↓', 'aria-label': 'Bajar', onclick: function () { sora.moveBookmark(b.id, i + 1); } }),
+        el('button', { text: 'Eliminar', onclick: function () { sora.removeBookmark(b.id); } })
+      ]));
+    });
+  }
+  onSora(function (s) {
+    const load = function () { s.bookmarks(render); };
+    s.bookmarksChanged.connect(load);
+    load();
+  });
+</script>
+</body>
+</html>

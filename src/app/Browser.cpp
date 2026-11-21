@@ -4,6 +4,7 @@
 #include <QEvent>
 #include <QWebEngineProfile>
 
+#include "app/InternalApi.h"
 #include "app/InternalPages.h"
 #include "app/MainWindow.h"
 #include "browser/Tab.h"
@@ -63,6 +64,7 @@ void Browser::openStores(const QString& databasePath)
 {
     m_history = std::make_unique<HistoryStore>(databasePath);
     m_bookmarks = new BookmarkStore(databasePath, this);
+    setInternalApi(new InternalApi(m_history.get(), m_bookmarks, this));
     for (const auto& w : std::as_const(m_windows))
         if (w)
             w->setStores(m_history.get(), m_bookmarks);

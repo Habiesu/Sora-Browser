@@ -4,11 +4,16 @@
 
 #include "app/InternalPages.h"
 #include "browser/Tab.h"
+#include "app/InternalApi.h"
+#include "data/BookmarkStore.h"
+#include "data/HistoryStore.h"
+#include <QTemporaryDir>
 #include "ui/Omnibox.h"
 
 class TestInternalPages : public QObject {
     Q_OBJECT
     QWebEngineProfile* m_profile = nullptr;
+    QTemporaryDir m_storage;
 
     static QVariant runJs(QWebEnginePage& page, const QString& js)
     {
@@ -55,6 +60,46 @@ private slots:
         runJs(page, "location.href = 'sora://settings'");
         QTest::qWait(800);
         QCOMPARE(page.url().scheme(), QString("https"));
+    }
+    void historyPageListsAndDeletes()
+    {
+        sora::HistoryStore history(m_storage.filePath("p1.db"));
+        sora::BookmarkStore bookmarks(m_storage.filePath("p1.db"));
+        sora::InternalApi api(&history, &bookmarks);
+        sora::setInternalApi(&api);
+        history.addVisit(QUrl("https://lobos.test/"), "Manada de lobos");
+        sora::Page page(m_profile);
+        page.setUrl(QUrl("sora://history"));
+        QTRY_VERIFY_WITH_TIMEOUT(runJs(page, "document.body.innerText").toString().contains("Manada de lobos"), 8000);
+        runJs(page, "document.querySelector('[data-remove]').click()");
+        QTRY_COMPARE(history.search({}).size(), 0);
+    }
+    void bookmarksPageListsAndRenames()
+    {
+        sora::HistoryStore history(m_storage.filePath("p2.db"));
+        sora::BookmarkStore bookmarks(m_storage.filePath("p2.db"));
+        sora::InternalApi api(&history, &bookmarks);
+        sora::setInternalApi(&api);
+        const qint64 id = bookmarks.add(QUrl("https://pino.test/"), "Pino");
+        sora::Page page(m_profile);
+        page.setUrl(QUrl("sora://bookmarks"));
+        // El nombre va en un <input> editable: innerText no incluye su valor.
+        QTRY_COMPARE_WITH_TIMEOUT(runJs(page, "(document.querySelector('input.name') || {}).value").toString(),
+                                  QString("Pino"), 8000);
+        runJs(page, QStringLiteral("sora.renameBookmark(%1, 'Pino verde')").arg(id));
+        QTRY_COMPARE(bookmarks.all().first().title, QString("Pino verde"));
+    }
+    void webPagesDoNotGetTheBridge()
+    {
+        sora::HistoryStore history(m_storage.filePath("p3.db"));
+        sora::BookmarkStore bookmarks(m_storage.filePath("p3.db"));
+        sora::InternalApi api(&history, &bookmarks);
+        sora::setInternalApi(&api);
+        sora::Page page(m_profile);
+        QSignalSpy loaded(&page, &QWebEnginePage::loadFinished);
+        page.setUrl(QUrl("data:text/html,<p>web</p>"));
+        QTRY_COMPARE(loaded.count(), 1);
+        QCOMPARE(runJs(page, "typeof qt === 'undefined'").toBool(), true);
     }
     void newTabShowsEmptyAddress()
     {

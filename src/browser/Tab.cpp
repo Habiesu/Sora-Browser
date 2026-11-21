@@ -3,6 +3,8 @@
 #include <QAction>
 #include <QWebEngineSettings>
 
+#include "app/InternalPages.h"
+
 namespace sora {
 
 namespace {
@@ -41,6 +43,8 @@ bool Page::acceptNavigationRequest(const QUrl& url, NavigationType type, bool is
         && this->url().scheme() != QLatin1String("sora"))
         return false;
     if (isMainFrame) {
+        // El puente con Sora (historial, marcadores, ajustes) solo existe en páginas sora://.
+        setWebChannel(url.scheme() == QLatin1String("sora") ? internalChannel() : nullptr);
         // shortcut: ANGLE de Qt 6.12 se cae (y con él Sora, la GPU va en el mismo proceso) con el
         // WebGL de la portada de github.com; ahí la web usa una imagen fija. Quitar al actualizar
         // Qt WebEngine si https://github.com deja de cerrar Sora con WebGL activado.
