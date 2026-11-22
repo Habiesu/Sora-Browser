@@ -4,8 +4,9 @@
 #include "engine/EngineApp.h"
 
 // La GPU de Chromium va en este proceso: aquí deciden los controladores qué gráfica usar.
-// Con la integrada, los directos de Discord desde la dedicada hacían parpadear las páginas.
-#ifndef SORA_INTEGRATED_GPU
+// Con Qt WebEngine (GPU en el mismo proceso) la integrada parpadeaba en los directos de Discord;
+// con CEF se usa la integrada como Chrome. Si vuelve el parpadeo: compilar con /DSORA_DEDICATED_GPU.
+#ifdef SORA_DEDICATED_GPU // opcional: por defecto la integrada, como Chrome (ver bench/results/2026-11-21-cef.md)
 extern "C" {
 __declspec(dllexport) unsigned long NvOptimusEnablement = 1;
 __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;

@@ -132,7 +132,9 @@ void TabManager::countBlocked(const QString& host, int blocked)
     // en varias pestañas de fondo se lo lleva la primera.
     Tab* target = nullptr;
     for (int i = 0; i < count(); ++i) {
-        if (tab(i)->url().host() != host)
+        // CEF da el sitio (youtube.com) y la pestaña tiene el host (www.youtube.com).
+        const QString tabHost = tab(i)->url().host();
+        if (tabHost != host && !tabHost.endsWith(QLatin1Char('.') + host))
             continue;
         if (i == currentIndex()) {
             target = tab(i);
